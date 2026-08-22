@@ -1,19 +1,28 @@
 import 'package:flutter/material.dart';
-import 'ui/splash/splash_view.dart';
+
+import 'ui/auth/auth_gate.dart';
 
 void main() {
-  runApp(const AlienHRApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const AlienHrApp());
 }
 
-class AlienHRApp extends StatelessWidget {
-  const AlienHRApp({super.key});
+class AlienHrApp extends StatelessWidget {
+  const AlienHrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Alien HR',
+      title: 'AlienHR',
       debugShowCheckedModeBanner: false,
-      home: const SplashView(),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF7C2FCE),
+        ),
+      ),
+      home: const AuthGate(),
     );
   }
 }

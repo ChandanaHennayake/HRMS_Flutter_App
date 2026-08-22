@@ -36,6 +36,43 @@ class ApiClient {
     );
   }
 
+
+  // ============================================================
+  // DELETE
+  // ============================================================
+
+  Future<http.Response> delete(
+    String endpoint, {
+    bool requiresAuth = true,
+  }) async {
+    final headers = await _buildHeaders(
+      requiresAuth: requiresAuth,
+    );
+
+    return http.delete(
+      Uri.parse(
+        '${ApiConstants.baseUrl}$endpoint',
+      ),
+      headers: headers,
+    );
+  }
+
+  Future<http.Response> put(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    bool requiresAuth = true,
+  }) async {
+    final headers = await _buildHeaders(
+      requiresAuth: requiresAuth,
+    );
+
+    return http.put(
+      Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+      headers: headers,
+      body: jsonEncode(body ?? {}),
+    );
+  }
+
   Future<Map<String, String>> _buildHeaders({
     required bool requiresAuth,
   }) async {

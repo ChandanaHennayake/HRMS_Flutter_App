@@ -1,3 +1,4 @@
+import 'package:alionhr/models/user.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
@@ -8,6 +9,7 @@ class SecureStorage {
 
   static const String _tokenKey = 'auth_token';
   static const String _userIdKey = 'user_id';
+  static const String _employeeIdKey = 'employee_id';
   static const String _usernameKey = 'username';
   static const String _emailKey = 'email';
   static const String _fullNameKey = 'full_name';
@@ -16,9 +18,11 @@ class SecureStorage {
   static const String _companyIdKey = 'company_id';
   static const String _branchIdKey = 'branch_id';
   static const String _expirationKey = 'token_expiration';
-
-  // NEW
   static const String _rememberMeKey = 'remember_me';
+
+  // =========================
+  // TOKEN
+  // =========================
 
   static Future<void> saveToken(String token) async {
     await _storage.write(
@@ -30,6 +34,10 @@ class SecureStorage {
   static Future<String?> getToken() async {
     return _storage.read(key: _tokenKey);
   }
+
+  // =========================
+  // REMEMBER ME
+  // =========================
 
   static Future<void> saveRememberMe(bool value) async {
     await _storage.write(
@@ -46,8 +54,13 @@ class SecureStorage {
     return value == 'true';
   }
 
+  // =========================
+  // USER
+  // =========================
+
   static Future<void> saveUser({
     required int userId,
+    required int employeeId,
     required String username,
     required String email,
     required String fullName,
@@ -60,6 +73,11 @@ class SecureStorage {
     await _storage.write(
       key: _userIdKey,
       value: userId.toString(),
+    );
+
+    await _storage.write(
+      key: _employeeIdKey,
+      value: employeeId.toString(),
     );
 
     await _storage.write(
@@ -105,6 +123,81 @@ class SecureStorage {
     }
   }
 
+  // =========================
+  // GET USER
+  // =========================
+
+  static Future<User?> getUser() async {
+    final userId =
+        await _storage.read(key: _userIdKey);
+
+    final employeeId =
+        await _storage.read(key: _employeeIdKey);
+
+    final username =
+        await _storage.read(key: _usernameKey);
+
+    final email =
+        await _storage.read(key: _emailKey);
+
+    final fullName =
+        await _storage.read(key: _fullNameKey);
+
+    final roleId =
+        await _storage.read(key: _roleIdKey);
+
+    final role =
+        await _storage.read(key: _roleKey);
+
+    final companyId =
+        await _storage.read(key: _companyIdKey);
+
+    final branchId =
+        await _storage.read(key: _branchIdKey);
+
+    if (userId == null ||
+        employeeId == null ||
+        username == null ||
+        roleId == null ||
+        role == null ||
+        companyId == null ||
+        branchId == null) {
+      return null;
+    }
+
+    return User(
+      userId: int.tryParse(userId) ?? 0,
+      employeeId: int.tryParse(employeeId) ?? 0,
+      username: username,
+      email: email ?? '',
+      fullName: fullName ?? '',
+      roleId: int.tryParse(roleId) ?? 0,
+      role: role,
+      companyId: int.tryParse(companyId) ?? 0,
+      branchId: int.tryParse(branchId) ?? 0,
+    );
+  }
+
+  // =========================
+  // EMPLOYEE ID
+  // =========================
+
+  static Future<int?> getEmployeeId() async {
+    final value = await _storage.read(
+      key: _employeeIdKey,
+    );
+
+    if (value == null) {
+      return null;
+    }
+
+    return int.tryParse(value);
+  }
+
+  // =========================
+  // TOKEN EXPIRATION
+  // =========================
+
   static Future<DateTime?> getTokenExpiration() async {
     final value = await _storage.read(
       key: _expirationKey,
@@ -116,6 +209,10 @@ class SecureStorage {
 
     return DateTime.tryParse(value);
   }
+
+  // =========================
+  // CLEAR
+  // =========================
 
   static Future<void> clear() async {
     await _storage.deleteAll();

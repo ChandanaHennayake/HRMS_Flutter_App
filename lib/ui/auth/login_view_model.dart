@@ -10,42 +10,48 @@ class LoginViewModel extends ChangeNotifier {
   String? errorMessage;
 
   Future<User?> login({
-    required String username,
-    required String password,
-  }) async {
-    if (username.trim().isEmpty ||
-        password.isEmpty) {
-      errorMessage = 'Please enter username and password.';
-      notifyListeners();
-
-      return null;
-    }
-
-    isLoading = true;
-    errorMessage = null;
+  required String username,
+  required String password,
+  required bool rememberMe,
+}) async {
+  if (username.trim().isEmpty ||
+      password.isEmpty) {
+    errorMessage =
+        'Please enter username and password.';
 
     notifyListeners();
 
-    try {
-      final response = await _authService.login(
-        username: username.trim(),
-        password: password,
-      );
+    return null;
+  }
 
-      if (!response.success || response.data == null) {
-        errorMessage = response.message;
-        return null;
-      }
+  isLoading = true;
+  errorMessage = null;
 
-      return response.data!.user;
-    } catch (_) {
-      errorMessage =
-          'Unable to connect to the server.';
+  notifyListeners();
+
+  try {
+    final response = await _authService.login(
+      username: username.trim(),
+      password: password,
+      rememberMe: rememberMe,
+    );
+
+    if (!response.success ||
+        response.data == null) {
+      errorMessage = response.message;
 
       return null;
-    } finally {
-      isLoading = false;
-      notifyListeners();
     }
+
+    return response.data!.user;
+  } catch (_) {
+    errorMessage =
+        'Unable to connect to the server.';
+
+    return null;
+  } finally {
+    isLoading = false;
+    notifyListeners();
   }
+}
 }
