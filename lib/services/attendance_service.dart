@@ -2,9 +2,44 @@ import 'dart:convert';
 
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
+import '../models/attendance.dart';
+import '../models/attendance_history.dart';
 
 class AttendanceService {
   final ApiClient _apiClient = ApiClient();
+
+  // =========================================================
+  // GET TODAY ATTENDANCE
+  // =========================================================
+
+  Future<AttendanceModel?> getTodayAttendance({
+    required int employeeId,
+  }) async {
+    final response = await _apiClient.get(
+      '${ApiConstants.todayAttendance}?employeeId=$employeeId',
+    );
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.trim().isEmpty) return null;
+      final json = jsonDecode(response.body);
+      if (json is Map<String, dynamic> && json['data'] != null) {
+        return AttendanceModel.fromJson(
+          Map<String, dynamic>.from(json['data']),
+        );
+      }
+      return null;
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  // =========================================================
+  // CHECK IN
+  // =========================================================
 
   Future<void> checkIn({
     required int employeeId,
@@ -27,6 +62,10 @@ class AttendanceService {
     }
   }
 
+  // =========================================================
+  // CHECK OUT
+  // =========================================================
+
   Future<void> checkOut({
     required int employeeId,
     required double latitude,
@@ -48,13 +87,115 @@ class AttendanceService {
     }
   }
 
-  String _extractError(String body) {
+  // =========================================================
+  // ATTENDANCE HISTORY
+  // =========================================================
+
+  Future<List<AttendanceHistoryModel>>
+      getAttendanceHistory({
+    required int employeeId,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    final queryParameters =
+        <String, String>{
+      'employeeId':
+          employeeId.toString(),
+    };
+
+    if (fromDate != null) {
+      queryParameters['fromDate'] =
+          _formatDate(fromDate);
+    }
+
+    if (toDate != null) {
+      queryParameters['toDate'] =
+          _formatDate(toDate);
+    }
+
+    final uri = Uri.parse(
+      ApiConstants.attendanceHistory,
+    ).replace(
+      queryParameters:
+          queryParameters,
+    );
+
+    final response =
+        await _apiClient.get(
+      uri.toString(),
+    );
+
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300) {
+      throw Exception(
+        _extractError(response.body),
+      );
+    }
+
+    if (response.body.trim().isEmpty) {
+      return [];
+    }
+
+    final decoded =
+        jsonDecode(response.body);
+
+    if (decoded is! List) {
+      throw Exception(
+        'Invalid attendance history response.',
+      );
+    }
+
+    return decoded
+        .map(
+          (item) =>
+              AttendanceHistoryModel.fromJson(
+            Map<String, dynamic>.from(
+              item as Map,
+            ),
+          ),
+        )
+        .toList();
+  }
+
+  // =========================================================
+  // DATE FORMAT
+  // =========================================================
+
+  String _formatDate(
+    DateTime date,
+  ) {
+    final year =
+        date.year
+            .toString()
+            .padLeft(4, '0');
+
+    final month =
+        date.month
+            .toString()
+            .padLeft(2, '0');
+
+    final day =
+        date.day
+            .toString()
+            .padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
+
+  // =========================================================
+  // ERROR
+  // =========================================================
+
+  String _extractError(
+    String body,
+  ) {
     if (body.trim().isEmpty) {
       return 'Attendance request failed.';
     }
 
     try {
-      final data = jsonDecode(body);
+      final data =
+          jsonDecode(body);
 
       if (data is Map<String, dynamic>) {
         return data['message']?.toString() ??

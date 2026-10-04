@@ -1,3 +1,4 @@
+import 'package:alionhr/ui/attendance/attendance_history_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/location/location_service.dart';
@@ -37,6 +38,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   int selectedIndex = 0;
 
   bool isCheckedIn = false;
+  bool isCheckedOut = false;
   bool isAttendanceLoading = false;
 
   String checkInTime = '--:--';
@@ -49,6 +51,64 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       'GPS location will be captured when marking attendance';
 
   final String branchName = 'Colombo Branch';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayAttendance();
+  }
+
+  // ============================================================
+  // LOAD TODAY ATTENDANCE
+  // ============================================================
+
+  Future<void> _loadTodayAttendance() async {
+    if (widget.user.employeeId <= 0) return;
+
+    try {
+      final attendance = await _attendanceService.getTodayAttendance(
+        employeeId: widget.user.employeeId,
+      );
+
+      if (!mounted) return;
+
+      if (attendance != null) {
+        setState(() {
+          if (attendance.checkInTime != null) {
+            checkInTime = _formatTime(attendance.checkInTime!);
+          }
+          if (attendance.checkOutTime != null) {
+            checkOutTime = _formatTime(attendance.checkOutTime!);
+            isCheckedIn = false;
+            isCheckedOut = true;
+          } else if (attendance.checkInTime != null) {
+            isCheckedIn = true;
+            isCheckedOut = false;
+          }
+
+          final hours = attendance.workedMinutes ~/ 60;
+          final mins = attendance.workedMinutes % 60;
+          workedTime =
+              '${hours.toString().padLeft(2, '0')}h ${mins.toString().padLeft(2, '0')}m';
+
+          final otHours = attendance.otMinutes ~/ 60;
+          final otMins = attendance.otMinutes % 60;
+          overtime =
+              '${otHours.toString().padLeft(2, '0')}h ${otMins.toString().padLeft(2, '0')}m';
+        });
+      }
+    } catch (_) {
+      // Keep defaults if failed to load
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    final localTime = time.toLocal();
+    final hour = localTime.hour % 12 == 0 ? 12 : localTime.hour % 12;
+    final period = localTime.hour >= 12 ? 'PM' : 'AM';
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute $period';
+  }
 
   // ============================================================
   // CHECK IN
@@ -146,15 +206,9 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         longitude: longitude,
       );
 
+      await _loadTodayAttendance();
+
       if (!mounted) return;
-
-      final now = TimeOfDay.now();
-
-      setState(() {
-        isCheckedIn = true;
-        checkInTime = now.format(context);
-        checkOutTime = '--:--';
-      });
 
       _showSuccess(
         'Checked in successfully.',
@@ -215,14 +269,9 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         longitude: longitude,
       );
 
+      await _loadTodayAttendance();
+
       if (!mounted) return;
-
-      final now = TimeOfDay.now();
-
-      setState(() {
-        isCheckedIn = false;
-        checkOutTime = now.format(context);
-      });
 
       _showSuccess(
         'Checked out successfully.',
@@ -249,6 +298,11 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   Future<void> _attendanceAction() async {
     if (isAttendanceLoading) return;
 
+    if (isCheckedOut) {
+      _showMessage('You have already completed attendance for today.');
+      return;
+    }
+
     if (isCheckedIn) {
       await _checkOut();
     } else {
@@ -270,6 +324,22 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       ),
     );
   }
+
+
+// ============================================================
+// OPEN ATTENDANCE HISTORY
+// ============================================================
+
+Future<void> _openAttendanceHistory() async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => AttendanceHistoryPage(
+        user: widget.user,
+      ),
+    ),
+  );
+}
 
   // ============================================================
   // LOGOUT
@@ -554,12 +624,12 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
               ),
 
               _statusBadge(
-                isCheckedIn
-                    ? 'Working'
-                    : 'Not checked in',
-                isCheckedIn
-                    ? Colors.green
-                    : Colors.grey,
+                isCheckedOut
+                    ? 'Completed'
+                    : (isCheckedIn ? 'Working' : 'Not checked in'),
+                isCheckedOut
+                    ? const Color(0xFF0284C7)
+                    : (isCheckedIn ? Colors.green : Colors.grey),
               ),
             ],
           ),
@@ -567,37 +637,37 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
           const SizedBox(height: 28),
 
           GestureDetector(
-            onTap: isAttendanceLoading
-                ? null
-                : _attendanceAction,
+            onTap: isAttendanceLoading ? null : _attendanceAction,
             child: AnimatedOpacity(
-              opacity:
-                  isAttendanceLoading ? 0.75 : 1,
-              duration:
-                  const Duration(milliseconds: 200),
+              opacity: isAttendanceLoading ? 0.75 : 1,
+              duration: const Duration(milliseconds: 200),
               child: Container(
                 width: 145,
                 height: 145,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: isCheckedIn
+                    colors: isCheckedOut
                         ? [
-                            const Color(0xFFEF4444),
-                            const Color(0xFFB91C1C),
+                            const Color(0xFF0D9488),
+                            const Color(0xFF0F766E),
                           ]
-                        : [
-                            violet,
-                            brightViolet,
-                          ],
+                        : isCheckedIn
+                            ? [
+                                const Color(0xFFEF4444),
+                                const Color(0xFFB91C1C),
+                              ]
+                            : [
+                                violet,
+                                brightViolet,
+                              ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (
-                        isCheckedIn
-                            ? Colors.red
-                            : violet
-                      ).withValues(
+                      color: (isCheckedOut
+                              ? Colors.teal
+                              : (isCheckedIn ? Colors.red : violet))
+                          .withValues(
                         alpha: 0.25,
                       ),
                       blurRadius: 25,
@@ -606,55 +676,47 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                 ),
                 child: isAttendanceLoading
                     ? const Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           SizedBox(
                             width: 35,
                             height: 35,
-                            child:
-                                CircularProgressIndicator(
+                            child: CircularProgressIndicator(
                               color: Colors.white,
                               strokeWidth: 3,
                             ),
                           ),
-
                           SizedBox(height: 12),
-
                           Text(
                             'PLEASE WAIT',
                             style: TextStyle(
                               color: Colors.white,
-                              fontWeight:
-                                  FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),
                           ),
                         ],
                       )
                     : Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            isCheckedIn
-                                ? Icons.logout_rounded
-                                : Icons.fingerprint,
+                            isCheckedOut
+                                ? Icons.check_circle_rounded
+                                : (isCheckedIn
+                                    ? Icons.logout_rounded
+                                    : Icons.fingerprint),
                             color: Colors.white,
                             size: 42,
                           ),
-
                           const SizedBox(height: 8),
-
                           Text(
-                            isCheckedIn
-                                ? 'CHECK OUT'
-                                : 'CHECK IN',
-                            style:
-                                const TextStyle(
+                            isCheckedOut
+                                ? 'COMPLETED'
+                                : (isCheckedIn ? 'CHECK OUT' : 'CHECK IN'),
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontWeight:
-                                  FontWeight.bold,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
@@ -809,11 +871,13 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
             ),
 
             // ATTENDANCE
-            _quickAction(
-              Icons.history_rounded,
-              'Attendance',
-              'View history',
-            ),
+          // ATTENDANCE
+_quickAction(
+  Icons.history_rounded,
+  'Attendance',
+  'View attendance history',
+  onTap: _openAttendanceHistory,
+),
 
             // HOLIDAYS
             _quickAction(

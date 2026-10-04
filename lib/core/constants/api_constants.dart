@@ -11,7 +11,11 @@ class ApiConstants {
   static const String checkOut =
       '/api/Attendance/check-out';
 
+  static const String attendanceHistory =
+      '/api/Attendance/history';
 
+  static const String todayAttendance =
+      '/api/Attendance/today';
 
 
 
