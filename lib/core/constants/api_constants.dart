@@ -44,4 +44,14 @@ static String cancelLeave(int id) =>
 
   static const String employees =
       '/api/Employee';
+
+  // ============================================================
+  // MASTER LOOKUPS
+  // ============================================================
+
+  static const String lookupDepartments = '/api/Lookup/departments';
+  static const String lookupDesignations = '/api/Lookup/designations';
+  static const String lookupEmploymentTypes = '/api/Lookup/employment-types';
+  static const String lookupRoles = '/api/Lookup/roles';
+  static const String lookupBranches = '/api/Lookup/branches';
 }

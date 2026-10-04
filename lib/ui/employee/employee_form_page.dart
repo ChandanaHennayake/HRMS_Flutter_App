@@ -2,8 +2,10 @@ import 'package:alionhr/models/employee.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/employee_request.dart';
+import '../../models/lookup_item.dart';
 import '../../models/user.dart';
 import '../../services/employee_service.dart';
+import '../../services/lookup_service.dart';
 
 class EmployeeFormPage extends StatefulWidget {
   final User user;
@@ -33,6 +35,9 @@ class _EmployeeFormPageState
 
   final EmployeeService _employeeService =
       EmployeeService();
+
+  final LookupService _lookupService =
+      LookupService();
 
   // ============================================================
   // CONTROLLERS
@@ -78,9 +83,104 @@ class _EmployeeFormPageState
   // VALUES
   // ============================================================
 
-  int employmentTypeId = 1;
+  int? employmentTypeId;
 
   int? departmentId;
+
+  int? branchId;
+
+  int? designationId;
+
+  int? roleId;
+
+  // ============================================================
+  // LOOKUPS
+  // ============================================================
+
+  EmployeeLookups? lookups;
+
+  bool isLoadingLookups = true;
+
+  String? lookupError;
+
+  int get _companyId =>
+      widget.employee?.companyId ??
+      widget.user.companyId;
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillEmployee();
+    _loadLookups();
+  }
+
+  void _prefillEmployee() {
+    final e = widget.employee;
+    if (e == null) return;
+
+    employeeCodeController.text = e.employeeCode;
+    firstNameController.text = e.firstName;
+    lastNameController.text = e.lastName ?? '';
+    emailController.text = e.email ?? '';
+    phoneController.text = e.phone ?? '';
+    addressLine1Controller.text = e.addressLine1 ?? '';
+    addressLine2Controller.text = e.addressLine2 ?? '';
+    cityController.text = e.city ?? '';
+    if (e.dateOfBirth != null) {
+      dateOfBirthController.text = _formatDate(e.dateOfBirth!);
+    }
+    if (e.joinedDate != null) {
+      joinedDateController.text = _formatDate(e.joinedDate!);
+    }
+    gender = e.gender;
+    branchId = e.branchId;
+    departmentId = e.departmentId;
+    designationId = e.designationId;
+    employmentTypeId = e.employmentTypeId;
+  }
+
+  Future<void> _loadLookups() async {
+    setState(() {
+      isLoadingLookups = true;
+      lookupError = null;
+    });
+
+    try {
+      final result = await _lookupService.getEmployeeLookups(
+        companyId: _companyId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        lookups = result;
+        // Drop selections that point to inactive/deleted masters
+        // so the dropdown doesn't crash and the user must reselect.
+        branchId = _validOrNull(branchId, result.branches);
+        departmentId = _validOrNull(departmentId, result.departments);
+        designationId = _validOrNull(designationId, result.designations);
+        employmentTypeId =
+            _validOrNull(employmentTypeId, result.employmentTypes);
+        roleId = _validOrNull(roleId, result.roles);
+        isLoadingLookups = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        lookupError = e.toString().replaceFirst('Exception: ', '');
+        isLoadingLookups = false;
+      });
+    }
+  }
+
+  int? _validOrNull(int? id, List<LookupItem> items) {
+    if (id == null) return null;
+    return items.any((x) => x.id == id) ? id : null;
+  }
 
   String? gender;
 
@@ -128,21 +228,22 @@ class _EmployeeFormPageState
     });
 
     try {
+      if (widget.isEditMode) {
+        await _updateEmployee();
+        return;
+      }
+
       final request = CreateEmployeeRequest(
         // ============================================
-        // FIXED VALUES
+        // LIVE LOOKUP SELECTIONS
         // ============================================
 
-        companyId: 1,
-        branchId: 1,
-        designationId: 1,
-        roleId: 4,
+        companyId: _companyId,
+        branchId: branchId!,
+        designationId: designationId!,
+        roleId: roleId!,
 
-        // ============================================
-        // SELECTABLE
-        // ============================================
-
-        employmentTypeId: employmentTypeId,
+        employmentTypeId: employmentTypeId!,
 
         // ============================================
         // EMPLOYEE DETAILS
@@ -256,6 +357,51 @@ class _EmployeeFormPageState
   }
 
   // ============================================================
+  // UPDATE
+  // ============================================================
+
+  Future<void> _updateEmployee() async {
+    final e = widget.employee!;
+
+    final request = UpdateEmployeeRequest(
+      companyId: _companyId,
+      branchId: branchId!,
+      employeeCode: employeeCodeController.text.trim(),
+      firstName: firstNameController.text.trim(),
+      lastName: _nullableText(lastNameController.text),
+      email: _nullableText(emailController.text),
+      phone: _nullableText(phoneController.text),
+      departmentId: departmentId,
+      designationId: designationId,
+      employmentTypeId: employmentTypeId,
+      dateOfBirth: _nullableText(dateOfBirthController.text),
+      joinedDate: joinedDateController.text.trim(),
+      gender: gender,
+      addressLine1: _nullableText(addressLine1Controller.text),
+      addressLine2: _nullableText(addressLine2Controller.text),
+      city: _nullableText(cityController.text),
+      isActive: e.isActive,
+      updatedBy: widget.user.userId,
+    );
+
+    await _employeeService.updateEmployee(
+      id: e.id,
+      data: request.toJson(),
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Employee updated successfully.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    Navigator.pop(context, true);
+  }
+
+  // ============================================================
   // NULLABLE TEXT
   // ============================================================
 
@@ -354,8 +500,10 @@ class _EmployeeFormPageState
       backgroundColor: background,
 
       appBar: AppBar(
-        title: const Text(
-          'Add Employee',
+        title: Text(
+          widget.isEditMode
+              ? 'Edit Employee'
+              : 'Add Employee',
         ),
         backgroundColor:
             Colors.white,
@@ -364,7 +512,50 @@ class _EmployeeFormPageState
         elevation: 0,
       ),
 
-      body: Form(
+      body: isLoadingLookups
+          ? const Center(
+              child: CircularProgressIndicator(color: violet),
+            )
+          : lookupError != null
+              ? _lookupErrorView()
+              : _buildForm(),
+    );
+  }
+
+  Widget _lookupErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 48, color: textMuted),
+            const SizedBox(height: 12),
+            Text(
+              lookupError ?? 'Failed to load master data.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: textDark, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _loadLookups,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: violet,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    final data = lookups!;
+
+    return Form(
         key: _formKey,
 
         child: SingleChildScrollView(
@@ -389,7 +580,7 @@ class _EmployeeFormPageState
 
               _fixedField(
                 label: 'Company',
-                value: 'ABANS',
+                value: 'Company #$_companyId',
                 icon:
                     Icons.business_outlined,
               ),
@@ -402,11 +593,13 @@ class _EmployeeFormPageState
               // BRANCH
               // ============================================
 
-              _fixedField(
+              _lookupDropdown(
                 label: 'Branch',
-                value: 'Bandarawela',
-                icon:
-                    Icons.location_city_outlined,
+                icon: Icons.location_city_outlined,
+                items: data.branches,
+                value: branchId,
+                requiredField: true,
+                onChanged: (v) => setState(() => branchId = v),
               ),
 
               const SizedBox(
@@ -417,11 +610,13 @@ class _EmployeeFormPageState
               // DESIGNATION
               // ============================================
 
-              _fixedField(
+              _lookupDropdown(
                 label: 'Designation',
-                value: 'Sales Assistant',
-                icon:
-                    Icons.badge_outlined,
+                icon: Icons.badge_outlined,
+                items: data.designations,
+                value: designationId,
+                requiredField: true,
+                onChanged: (v) => setState(() => designationId = v),
               ),
 
               const SizedBox(
@@ -429,25 +624,35 @@ class _EmployeeFormPageState
               ),
 
               // ============================================
-              // ROLE
+              // ROLE (create only - role lives on the login account)
               // ============================================
 
-              _fixedField(
-                label: 'Role',
-                value: 'Employee',
-                icon:
-                    Icons.person_outline,
-              ),
-
-              const SizedBox(
-                height: 12,
-              ),
+              if (!widget.isEditMode) ...[
+                _lookupDropdown(
+                  label: 'Role',
+                  icon: Icons.person_outline,
+                  items: data.roles,
+                  value: roleId,
+                  requiredField: true,
+                  onChanged: (v) => setState(() => roleId = v),
+                ),
+                const SizedBox(
+                  height: 12,
+                ),
+              ],
 
               // ============================================
               // EMPLOYMENT TYPE
               // ============================================
 
-              _employmentTypeDropdown(),
+              _lookupDropdown(
+                label: 'Employment Type',
+                icon: Icons.work_outline,
+                items: data.employmentTypes,
+                value: employmentTypeId,
+                requiredField: true,
+                onChanged: (v) => setState(() => employmentTypeId = v),
+              ),
 
               const SizedBox(
                 height: 28,
@@ -536,7 +741,14 @@ class _EmployeeFormPageState
                 height: 12,
               ),
 
-              _departmentField(),
+              _lookupDropdown(
+                label: 'Department',
+                icon: Icons.account_tree_outlined,
+                items: data.departments,
+                value: departmentId,
+                requiredField: true,
+                onChanged: (v) => setState(() => departmentId = v),
+              ),
 
               const SizedBox(
                 height: 12,
@@ -643,34 +855,36 @@ class _EmployeeFormPageState
               // LOGIN
               // ============================================
 
-              _sectionTitle(
-                'Login Details',
-              ),
+              if (!widget.isEditMode) ...[
+                _sectionTitle(
+                  'Login Details',
+                ),
 
-              const SizedBox(
-                height: 12,
-              ),
+                const SizedBox(
+                  height: 12,
+                ),
 
-              _textField(
-                controller:
-                    usernameController,
-                label:
-                    'Username',
-                icon:
-                    Icons.account_circle_outlined,
-                requiredField:
-                    true,
-              ),
+                _textField(
+                  controller:
+                      usernameController,
+                  label:
+                      'Username',
+                  icon:
+                      Icons.account_circle_outlined,
+                  requiredField:
+                      true,
+                ),
 
-              const SizedBox(
-                height: 12,
-              ),
+                const SizedBox(
+                  height: 12,
+                ),
 
-              _passwordField(),
+                _passwordField(),
 
-              const SizedBox(
-                height: 30,
-              ),
+                const SizedBox(
+                  height: 30,
+                ),
+              ],
 
               // ============================================
               // SAVE
@@ -715,8 +929,10 @@ class _EmployeeFormPageState
                                 Colors.white,
                           ),
                         )
-                      : const Text(
-                          'Create Employee',
+                      : Text(
+                          widget.isEditMode
+                              ? 'Save Changes'
+                              : 'Create Employee',
                           style:
                               TextStyle(
                             fontSize:
@@ -734,7 +950,6 @@ class _EmployeeFormPageState
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -823,85 +1038,49 @@ class _EmployeeFormPageState
   }
 
   // ============================================================
-  // EMPLOYMENT TYPE
+  // LOOKUP DROPDOWN (live master data)
   // ============================================================
 
-  Widget _employmentTypeDropdown() {
+  Widget _lookupDropdown({
+    required String label,
+    required IconData icon,
+    required List<LookupItem> items,
+    required int? value,
+    required ValueChanged<int?> onChanged,
+    bool requiredField = false,
+  }) {
+    final isEmpty = items.isEmpty;
+
     return DropdownButtonFormField<int>(
-      value: employmentTypeId,
+      initialValue: value,
+      isExpanded: true,
 
-      decoration:
-          _inputDecoration(
-        label:
-            'Employment Type',
-        icon:
-            Icons.work_outline,
+      decoration: _inputDecoration(
+        label: label,
+        icon: icon,
+      ).copyWith(
+        helperText: isEmpty ? 'No active ${label.toLowerCase()} records found.' : null,
       ),
 
-      items: const [
-        DropdownMenuItem<int>(
-          value: 1,
-          child:
-              Text('Permanent'),
-        ),
-        DropdownMenuItem<int>(
-          value: 2,
-          child:
-              Text('Contract'),
-        ),
-      ],
+      hint: Text('Select $label'),
 
-      onChanged: isSaving
-          ? null
-          : (value) {
-              if (value == null) {
-                return;
-              }
+      items: items
+          .map(
+            (item) => DropdownMenuItem<int>(
+              value: item.id,
+              child: Text(
+                item.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(),
 
-              setState(() {
-                employmentTypeId =
-                    value;
-              });
-            },
+      onChanged: isSaving || isEmpty ? null : onChanged,
 
-      validator: (value) {
-        if (value == null) {
-          return 'Employment type is required.';
-        }
-
-        return null;
-      },
-    );
-  }
-
-  // ============================================================
-  // DEPARTMENT
-  // ============================================================
-
-  Widget _departmentField() {
-    return DropdownButtonFormField<int>(
-      value: departmentId,
-
-      decoration:
-          _inputDecoration(
-        label:
-            'Department',
-        icon:
-            Icons.account_tree_outlined,
-      ),
-
-      hint: const Text(
-        'Select Department',
-      ),
-
-      items: const [],
-
-      onChanged: (value) {
-        setState(() {
-          departmentId =
-              value;
-        });
-      },
+      validator: requiredField
+          ? (v) => v == null ? '$label is required.' : null
+          : null,
     );
   }
 
@@ -911,7 +1090,7 @@ class _EmployeeFormPageState
 
   Widget _genderDropdown() {
     return DropdownButtonFormField<String>(
-      value: gender,
+      initialValue: gender,
 
       decoration:
           _inputDecoration(
