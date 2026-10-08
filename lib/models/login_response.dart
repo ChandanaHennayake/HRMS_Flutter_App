@@ -26,11 +26,15 @@ class LoginData {
   final User user;
   final String token;
   final DateTime? expiration;
+  final String? refreshToken;
+  final DateTime? refreshTokenExpiration;
 
   LoginData({
     required this.user,
     required this.token,
     this.expiration,
+    this.refreshToken,
+    this.refreshTokenExpiration,
   });
 
   factory LoginData.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,10 @@ class LoginData {
       token: json['token'] ?? '',
       expiration: DateTime.tryParse(
         json['expiration'] ?? '',
+      ),
+      refreshToken: json['refreshToken'],
+      refreshTokenExpiration: DateTime.tryParse(
+        json['refreshTokenExpiration'] ?? '',
       ),
     );
   }

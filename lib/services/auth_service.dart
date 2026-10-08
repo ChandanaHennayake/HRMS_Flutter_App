@@ -35,6 +35,10 @@ class AuthService {
         data.token,
       );
 
+      if (data.refreshToken != null && data.refreshToken!.isNotEmpty) {
+        await SecureStorage.saveRefreshToken(data.refreshToken!);
+      }
+
       await SecureStorage.saveRememberMe(
         rememberMe,
       );
@@ -74,6 +78,37 @@ class AuthService {
     message: message,
   );
 }
+
+  Future<bool> refreshToken() async {
+    final token = await SecureStorage.getToken();
+    final refreshToken = await SecureStorage.getRefreshToken();
+    if (token == null || refreshToken == null) return false;
+
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.refreshToken,
+        requiresAuth: false,
+        body: {
+          'token': token,
+          'refreshToken': refreshToken,
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final json = jsonDecode(response.body);
+        if (json['success'] == true && json['data'] != null) {
+          final newToken = json['data']['token'];
+          final newRefreshToken = json['data']['refreshToken'];
+          if (newToken != null) await SecureStorage.saveToken(newToken);
+          if (newRefreshToken != null) {
+            await SecureStorage.saveRefreshToken(newRefreshToken);
+          }
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
 
   Future<void> logout() async {
     await SecureStorage.clear();

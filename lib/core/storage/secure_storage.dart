@@ -19,6 +19,7 @@ class SecureStorage {
   static const String _branchIdKey = 'branch_id';
   static const String _expirationKey = 'token_expiration';
   static const String _rememberMeKey = 'remember_me';
+  static const String _refreshTokenKey = 'refresh_token';
 
   // =========================
   // TOKEN
@@ -33,6 +34,17 @@ class SecureStorage {
 
   static Future<String?> getToken() async {
     return _storage.read(key: _tokenKey);
+  }
+
+  static Future<void> saveRefreshToken(String token) async {
+    await _storage.write(
+      key: _refreshTokenKey,
+      value: token,
+    );
+  }
+
+  static Future<String?> getRefreshToken() async {
+    return _storage.read(key: _refreshTokenKey);
   }
 
   // =========================
@@ -176,6 +188,22 @@ class SecureStorage {
       companyId: int.tryParse(companyId) ?? 0,
       branchId: int.tryParse(branchId) ?? 0,
     );
+  }
+
+  // =========================
+  // USER ID
+  // =========================
+
+  static Future<int?> getUserId() async {
+    final value = await _storage.read(
+      key: _userIdKey,
+    );
+
+    if (value == null) {
+      return null;
+    }
+
+    return int.tryParse(value);
   }
 
   // =========================
