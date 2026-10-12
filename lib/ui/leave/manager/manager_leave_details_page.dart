@@ -72,8 +72,6 @@ class _ManagerLeaveDetailsPageState
   }) async {
     if (_isProcessing) return;
 
-    final action = isApprove ? 'approve' : 'reject';
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {

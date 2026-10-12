@@ -4,6 +4,7 @@ import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../models/attendance.dart';
 import '../models/attendance_history.dart';
+import '../models/branch_daily_attendance.dart';
 
 class AttendanceService {
   final ApiClient _apiClient = ApiClient();
@@ -207,5 +208,40 @@ class AttendanceService {
     }
 
     return body;
+  }
+
+  // =========================================================
+  // BRANCH / COMPANY DAILY ATTENDANCE ROSTER
+  // =========================================================
+
+  Future<List<BranchDailyAttendance>> getBranchDailyAttendance({
+    int? branchId,
+    DateTime? date,
+  }) async {
+    final dateStr = date != null ? _formatDate(date) : null;
+    final url = ApiConstants.branchDailyAttendance(
+      branchId: branchId,
+      date: dateStr,
+    );
+
+    final response = await _apiClient.get(url, requiresAuth: true);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      dynamic data = decoded;
+      if (decoded is Map<String, dynamic> && decoded['data'] != null) {
+        data = decoded['data'];
+      }
+      if (data is List) {
+        return data
+            .map((item) => BranchDailyAttendance.fromJson(
+                  item as Map<String, dynamic>,
+                ))
+            .toList();
+      }
+      return [];
+    }
+
+    throw Exception(_extractError(response.body));
   }
 }

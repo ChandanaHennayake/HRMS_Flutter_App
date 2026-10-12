@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/leave_balance.dart';
 import '../../models/leave_request.dart';
 import '../../models/user.dart';
 import '../../services/leave_service.dart';
@@ -34,6 +35,7 @@ class _LeavePageState extends State<LeavePage> {
       LeaveService();
 
   List<LeaveRequest> _leaves = [];
+  List<LeaveBalance> _balances = [];
 
   bool _isLoading = true;
   String? _error;
@@ -55,15 +57,20 @@ class _LeavePageState extends State<LeavePage> {
     });
 
     try {
-      final result =
-          await _leaveService.getEmployeeLeaves(
+      final leavesFuture = _leaveService.getEmployeeLeaves(
         employeeId: widget.user.employeeId,
       );
+      final balancesFuture = _leaveService.getLeaveBalances(
+        employeeId: widget.user.employeeId,
+      );
+
+      final results = await Future.wait([leavesFuture, balancesFuture]);
 
       if (!mounted) return;
 
       setState(() {
-        _leaves = result;
+        _leaves = results[0] as List<LeaveRequest>;
+        _balances = results[1] as List<LeaveBalance>;
         _isLoading = false;
       });
     } catch (e) {
@@ -174,6 +181,11 @@ class _LeavePageState extends State<LeavePage> {
 
         const SizedBox(height: 20),
 
+        if (_balances.isNotEmpty) ...[
+          _buildBalanceSection(),
+          const SizedBox(height: 20),
+        ],
+
         _buildSummary(),
 
         const SizedBox(height: 25),
@@ -273,6 +285,172 @@ class _LeavePageState extends State<LeavePage> {
           ),
         ],
       ),
+    );
+  }
+
+  // ============================================================
+  // LEAVE BALANCES
+  // ============================================================
+
+  Widget _buildBalanceSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Leave Quotas & Balances',
+              style: TextStyle(
+                color: textDark,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0E4FA),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Year ${DateTime.now().year}',
+                style: const TextStyle(
+                  color: violet,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 146,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _balances.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final b = _balances[index];
+              final progress = b.allocatedDays > 0
+                  ? ((b.allocatedDays - b.availableDays) / b.allocatedDays).clamp(0.0, 1.0)
+                  : 0.0;
+
+              return Container(
+                width: 220,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFEEE8F3),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            b.leaveTypeName,
+                            style: const TextStyle(
+                              color: textDark,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: b.isPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            b.isPaid ? 'Paid' : 'Unpaid',
+                            style: TextStyle(
+                              color: b.isPaid ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          b.availableDays.toStringAsFixed(b.availableDays.truncateToDouble() == b.availableDays ? 0 : 1),
+                          style: const TextStyle(
+                            color: violet,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '/ ${b.allocatedDays.toStringAsFixed(b.allocatedDays.truncateToDouble() == b.allocatedDays ? 0 : 1)} days left',
+                          style: const TextStyle(
+                            color: textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: const Color(0xFFF0E8F8),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progress > 0.85 ? Colors.redAccent : violet,
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Used: ${b.usedDays.toStringAsFixed(b.usedDays.truncateToDouble() == b.usedDays ? 0 : 1)}',
+                          style: const TextStyle(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                        Text(
+                          'Pending: ${b.pendingDays.toStringAsFixed(b.pendingDays.truncateToDouble() == b.pendingDays ? 0 : 1)}',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

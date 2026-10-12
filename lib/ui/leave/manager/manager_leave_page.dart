@@ -7,10 +7,14 @@ import 'manager_leave_details_page.dart';
 
 class ManagerLeavePage extends StatefulWidget {
   final User user;
+  final int? branchId;
+  final String? branchName;
 
   const ManagerLeavePage({
     super.key,
     required this.user,
+    this.branchId,
+    this.branchName,
   });
 
   @override
@@ -51,8 +55,9 @@ class _ManagerLeavePageState
     }
 
     try {
-      final result =
-          await _leaveService.getPendingLeaves();
+      final result = await _leaveService.getPendingLeaves(
+        branchId: widget.branchId ?? widget.user.branchId,
+      );
 
       if (!mounted) return;
 
@@ -118,9 +123,11 @@ class _ManagerLeavePageState
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: const Text(
-          'Leave Requests',
-          style: TextStyle(
+        title: Text(
+          widget.branchName != null
+              ? 'Leaves - ${widget.branchName}'
+              : 'Leave Requests',
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),

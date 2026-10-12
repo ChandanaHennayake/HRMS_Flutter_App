@@ -1,6 +1,7 @@
 import 'package:alionhr/models/apply_leave_request.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/leave_balance.dart';
 import '../../models/leave_type.dart';
 import '../../models/user.dart';
 import '../../services/leave_service.dart';
@@ -29,6 +30,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       TextEditingController();
 
   List<LeaveType> _leaveTypes = [];
+  List<LeaveBalance> _balances = [];
 
   LeaveType? _selectedLeaveType;
 
@@ -51,22 +53,28 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
   }
 
   // ============================================================
-  // LOAD LEAVE TYPES
+  // LOAD LEAVE TYPES & BALANCES
   // ============================================================
 
   Future<void> _loadLeaveTypes() async {
     try {
-      final types =
-          await _leaveService.getLeaveTypes();
+      final typesFuture = _leaveService.getLeaveTypes();
+      final balancesFuture = _leaveService.getLeaveBalances(
+        employeeId: widget.user.employeeId,
+      );
+
+      final results = await Future.wait([typesFuture, balancesFuture]);
 
       if (!mounted) return;
 
+      final types = results[0] as List<LeaveType>;
       final activeTypes = types
           .where((type) => type.isActive)
           .toList();
 
       setState(() {
         _leaveTypes = activeTypes;
+        _balances = results[1] as List<LeaveBalance>;
         _isLoading = false;
       });
     } catch (e) {
@@ -175,6 +183,22 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       return;
     }
 
+    // Validate quota balance
+    final balance = _balances
+        .where((b) => b.leaveTypeId == _selectedLeaveType!.id)
+        .firstOrNull;
+
+    if (balance != null && balance.isPaid && _totalDays > balance.availableDays) {
+      final availText = balance.availableDays.toStringAsFixed(
+        balance.availableDays.truncateToDouble() == balance.availableDays ? 0 : 1,
+      );
+      _showError(
+        'Insufficient leave balance for ${_selectedLeaveType!.name}. '
+        'Available: $availText day(s), Requested: $_totalDays day(s).',
+      );
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -256,7 +280,7 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
           const SizedBox(height: 8),
 
           DropdownButtonFormField<LeaveType>(
-            value: _selectedLeaveType,
+            initialValue: _selectedLeaveType,
             decoration: _inputDecoration(
               'Select leave type',
               Icons.event_note_outlined,
@@ -273,6 +297,11 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
               });
             },
           ),
+
+          if (_selectedLeaveType != null) ...[
+            const SizedBox(height: 10),
+            _buildSelectedBalanceBadge(),
+          ],
 
           const SizedBox(height: 20),
 
@@ -481,5 +510,71 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
           backgroundColor: Colors.red,
         ),
       );
+  }
+
+  Widget _buildSelectedBalanceBadge() {
+    final balance = _balances
+        .where((b) => b.leaveTypeId == _selectedLeaveType!.id)
+        .firstOrNull;
+
+    if (balance == null) return const SizedBox.shrink();
+
+    final bool isLow = balance.availableDays <= 0;
+    final availText = balance.availableDays.toStringAsFixed(
+      balance.availableDays.truncateToDouble() == balance.availableDays ? 0 : 1,
+    );
+    final allocText = balance.allocatedDays.toStringAsFixed(
+      balance.allocatedDays.truncateToDouble() == balance.allocatedDays ? 0 : 1,
+    );
+    final usedText = balance.usedDays.toStringAsFixed(
+      balance.usedDays.truncateToDouble() == balance.usedDays ? 0 : 1,
+    );
+    final pendingText = balance.pendingDays.toStringAsFixed(
+      balance.pendingDays.truncateToDouble() == balance.pendingDays ? 0 : 1,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isLow ? const Color(0xFFFDECEA) : const Color(0xFFF0E4FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isLow ? const Color(0xFFF5C6CB) : const Color(0xFFDDD0EE),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isLow ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+            color: isLow ? Colors.red : violet,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Available: $availText / $allocText days',
+                  style: TextStyle(
+                    color: isLow ? Colors.red.shade900 : textDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Used: $usedText • Pending: $pendingText',
+                  style: TextStyle(
+                    color: isLow ? Colors.red.shade700 : textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

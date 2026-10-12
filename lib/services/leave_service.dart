@@ -3,11 +3,30 @@ import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../models/apply_leave_request.dart';
 import '../models/leave_action_request.dart';
+import '../models/leave_balance.dart';
 import '../models/leave_request.dart';
 import '../models/leave_type.dart';
 
 class LeaveService {
   final ApiClient _apiClient = ApiClient();
+
+  /// Get Leave Balances for employee
+  Future<List<LeaveBalance>> getLeaveBalances({
+    required int employeeId,
+    int? year,
+  }) async {
+    final response = await _apiClient.get(
+      ApiConstants.leaveBalances(employeeId, year: year),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final json = jsonDecode(response.body);
+      final List data = json['data'] ?? [];
+      return data.map((e) => LeaveBalance.fromJson(e)).toList();
+    }
+
+    throw Exception(_extractError(response.body));
+  }
 
   /// Get Leave Types
   Future<List<LeaveType>> getLeaveTypes() async {
@@ -82,10 +101,14 @@ class LeaveService {
     }
   }
 
-  /// Pending Leaves (Manager/Admin)
-  Future<List<LeaveRequest>> getPendingLeaves() async {
+  /// Pending Leaves (Manager/Admin, optionally filtered by branch)
+  Future<List<LeaveRequest>> getPendingLeaves({int? branchId}) async {
+    final String url = branchId != null && branchId > 0
+        ? '${ApiConstants.pendingLeaves}?branchId=$branchId'
+        : ApiConstants.pendingLeaves;
+
     final response = await _apiClient.get(
-      ApiConstants.pendingLeaves,
+      url,
     );
 
     if (response.statusCode >= 200 &&

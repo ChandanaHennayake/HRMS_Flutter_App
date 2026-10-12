@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../models/user.dart';
+import '../../models/attendance_correction.dart';
 import '../../models/attendance_history.dart';
+import '../../models/user.dart';
 import '../../services/attendance_service.dart';
+import 'attendance_correction_dialog.dart';
 
 class AttendanceHistoryPage extends StatefulWidget {
   final User user;
@@ -28,9 +30,6 @@ class _AttendanceHistoryPageState
 
   static const Color violet =
       Color(0xFF7C2FCE);
-
-  static const Color brightViolet =
-      Color(0xFFA855F7);
 
   static const Color background =
       Color(0xFFF7F5FA);
@@ -118,11 +117,11 @@ class _AttendanceHistoryPageState
         _cleanError(e),
       );
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -155,6 +154,28 @@ class _AttendanceHistoryPageState
     });
 
     await _loadAttendance();
+  }
+
+  Future<void> _openCorrectionDialog() async {
+    final result = await showDialog<AttendanceCorrection?>(
+      context: context,
+      builder: (_) => AttendanceCorrectionDialog(
+        employeeId: employeeId,
+      ),
+    );
+
+    if (result != null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Attendance correction request submitted successfully.',
+          ),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+      _loadAttendance();
+    }
   }
 
   // ============================================================
@@ -395,6 +416,15 @@ class _AttendanceHistoryPageState
 
       actions: [
         IconButton(
+          tooltip: 'Request Attendance Correction',
+          onPressed: _openCorrectionDialog,
+          icon: const Icon(
+            Icons.edit_calendar_outlined,
+            color: Color(0xFFA855F7),
+          ),
+        ),
+
+        IconButton(
           onPressed:
               _loadAttendance,
 
@@ -448,8 +478,8 @@ class _AttendanceHistoryPageState
         boxShadow: [
           BoxShadow(
             color:
-                violet.withOpacity(
-              0.18,
+                violet.withValues(
+              alpha: 0.18,
             ),
 
             blurRadius:
@@ -478,8 +508,8 @@ class _AttendanceHistoryPageState
                 BoxDecoration(
               color:
                   Colors.white
-                      .withOpacity(
-                0.15,
+                      .withValues(
+                alpha: 0.15,
               ),
 
               shape:
@@ -553,8 +583,8 @@ class _AttendanceHistoryPageState
                       TextStyle(
                     color:
                         Colors.white
-                            .withOpacity(
-                      0.78,
+                            .withValues(
+                      alpha: 0.78,
                     ),
 
                     fontSize:
@@ -603,8 +633,8 @@ class _AttendanceHistoryPageState
           BoxShadow(
             color:
                 Colors.black
-                    .withOpacity(
-              0.035,
+                    .withValues(
+              alpha: 0.035,
             ),
 
             blurRadius:
@@ -1037,8 +1067,8 @@ class _AttendanceHistoryPageState
           BoxShadow(
             color:
                 Colors.black
-                    .withOpacity(
-              0.035,
+                    .withValues(
+              alpha: 0.035,
             ),
 
             blurRadius:
@@ -1572,8 +1602,8 @@ class _AttendanceHistoryPageState
       decoration:
           BoxDecoration(
         color:
-            color.withOpacity(
-          0.10,
+            color.withValues(
+          alpha: 0.10,
         ),
 
         borderRadius:
