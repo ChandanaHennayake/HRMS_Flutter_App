@@ -8,10 +8,14 @@ import 'employee_form_page.dart';
 
 class EmployeeListPage extends StatefulWidget {
   final User user;
+  final int? branchId;
+  final String? branchName;
 
   const EmployeeListPage({
     super.key,
     required this.user,
+    this.branchId,
+    this.branchName,
   });
 
   @override
@@ -21,9 +25,6 @@ class EmployeeListPage extends StatefulWidget {
 
 class _EmployeeListPageState
     extends State<EmployeeListPage> {
-  static const Color deepDark =
-      Color(0xFF0B0614);
-
   static const Color violet =
       Color(0xFF7C2FCE);
 
@@ -79,8 +80,13 @@ class _EmployeeListPageState
 
       if (!mounted) return;
 
+      List<Employee> list = result;
+      if (widget.branchId != null && widget.branchId! > 0) {
+        list = list.where((e) => e.branchId == widget.branchId).toList();
+      }
+
       setState(() {
-        _employees = result;
+        _employees = list;
         _isLoading = false;
       });
     } catch (e) {
@@ -280,9 +286,11 @@ class _EmployeeListPageState
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: textDark,
-        title: const Text(
-          'Employees',
-          style: TextStyle(
+        title: Text(
+          widget.branchName != null
+              ? 'Team - ${widget.branchName}'
+              : 'Employees',
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -556,6 +564,11 @@ class _EmployeeListPageState
         ),
         onTap: () {
           _openDetails(
+            employee,
+          );
+        },
+        onLongPress: () {
+          _deleteEmployee(
             employee,
           );
         },

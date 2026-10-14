@@ -2,11 +2,17 @@ import 'package:alionhr/ui/attendance/attendance_history_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/location/location_service.dart';
+import '../../../models/holiday.dart';
 import '../../../models/user.dart';
 import '../../../services/attendance_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/holiday_service.dart';
 import '../../auth/login_view.dart';
+import '../../holiday/holidays_page.dart';
 import '../../leave/leave_page.dart';
+import '../../notification/notification_bell.dart';
+import '../../payroll/my_payslips_page.dart';
+import '../../profile/profile_page.dart';
 
 class EmployeeDashboard extends StatefulWidget {
   final User user;
@@ -35,6 +41,11 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   final LocationService _locationService =
       LocationService();
 
+  final HolidayService _holidayService =
+      HolidayService();
+
+  Holiday? _upcomingHoliday;
+
   int selectedIndex = 0;
 
   bool isCheckedIn = false;
@@ -56,6 +67,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   void initState() {
     super.initState();
     _loadTodayAttendance();
+    _loadUpcomingHoliday();
   }
 
   // ============================================================
@@ -99,6 +111,41 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
       }
     } catch (_) {
       // Keep defaults if failed to load
+    }
+  }
+
+  Future<void> _loadUpcomingHoliday() async {
+    try {
+      final holiday = await _holidayService.getUpcomingHoliday();
+      if (!mounted) return;
+      setState(() {
+        _upcomingHoliday = holiday;
+      });
+    } catch (_) {
+      // Keep defaults if failed to load
+    }
+  }
+
+  String _formatHolidayDate(String dateStr) {
+    try {
+      final d = DateTime.parse(dateStr);
+      const months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ];
+      return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    } catch (_) {
+      return dateStr;
     }
   }
 
@@ -341,6 +388,52 @@ Future<void> _openAttendanceHistory() async {
   );
 }
 
+// ============================================================
+// OPEN HOLIDAYS PAGE
+// ============================================================
+
+Future<void> _openHolidaysPage() async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => HolidaysPage(
+        user: widget.user,
+      ),
+    ),
+  );
+  _loadUpcomingHoliday();
+}
+
+// ============================================================
+// OPEN PROFILE PAGE
+// ============================================================
+
+Future<void> _openProfilePage() async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ProfilePage(
+        user: widget.user,
+      ),
+    ),
+  );
+}
+
+// ============================================================
+// OPEN PAYSLIPS PAGE
+// ============================================================
+
+Future<void> _openPayslipsPage() async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => MyPayslipsPage(
+        employeeId: widget.user.employeeId,
+      ),
+    ),
+  );
+}
+
   // ============================================================
   // LOGOUT
   // ============================================================
@@ -413,40 +506,50 @@ Future<void> _openAttendanceHistory() async {
     return Scaffold(
       backgroundColor: background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            bottom: 30,
-          ),
-          child: Column(
-            children: [
-              _buildHeader(),
+        child: RefreshIndicator(
+          color: violet,
+          onRefresh: () async {
+            await Future.wait([
+              _loadTodayAttendance(),
+              _loadUpcomingHoliday(),
+            ]);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(
+              bottom: 30,
+            ),
+            child: Column(
+              children: [
+                _buildHeader(),
 
-              Transform.translate(
-                offset: const Offset(0, -24),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                  ),
-                  child: Column(
-                    children: [
-                      _buildAttendanceCard(),
+                Transform.translate(
+                  offset: const Offset(0, -24),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildAttendanceCard(),
 
-                      const SizedBox(height: 18),
+                        const SizedBox(height: 18),
 
-                      _buildTodaySummary(),
+                        _buildTodaySummary(),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      _buildQuickActions(),
+                        _buildQuickActions(),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      _buildUpcoming(),
-                    ],
+                        _buildUpcoming(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -516,9 +619,8 @@ Future<void> _openAttendanceHistory() async {
                 ),
               ),
 
-              _headerButton(
-                Icons.notifications_none_rounded,
-                () {},
+              const NotificationBell(
+                isHeaderButton: true,
               ),
 
               const SizedBox(width: 8),
@@ -884,6 +986,7 @@ _quickAction(
               Icons.celebration_outlined,
               'Holidays',
               'View holidays',
+              onTap: _openHolidaysPage,
             ),
 
             // PROFILE
@@ -891,6 +994,15 @@ _quickAction(
               Icons.person_outline,
               'My Profile',
               'Personal details',
+              onTap: _openProfilePage,
+            ),
+
+            // PAYSLIPS
+            _quickAction(
+              Icons.receipt_long_rounded,
+              'My Payslips',
+              'Salary & payouts',
+              onTap: _openPayslipsPage,
             ),
           ],
         ),
@@ -914,54 +1026,73 @@ _quickAction(
 
         const SizedBox(height: 12),
 
-        _card(
-          child: const Row(
-            children: [
-              Icon(
-                Icons.celebration_outlined,
-                color: violet,
-                size: 30,
-              ),
-
-              SizedBox(width: 14),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Next Holiday',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-
-                    SizedBox(height: 3),
-
-                    Text(
-                      'Sample Public Holiday',
-                      style: TextStyle(
-                        color: textDark,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-
-                    SizedBox(height: 2),
-
-                    Text(
-                      'August 10, 2026',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+        InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _openHolidaysPage,
+          child: _card(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: violet.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.celebration_outlined,
+                    color: violet,
+                    size: 26,
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(width: 14),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Next Holiday',
+                        style: TextStyle(
+                          color: textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+
+                      const SizedBox(height: 3),
+
+                      Text(
+                        _upcomingHoliday?.holidayName ?? 'No upcoming holidays',
+                        style: const TextStyle(
+                          color: textDark,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 2),
+
+                      Text(
+                        _upcomingHoliday != null
+                            ? _formatHolidayDate(_upcomingHoliday!.holidayDate)
+                            : 'Tap to view full company calendar',
+                        style: const TextStyle(
+                          color: textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Icon(
+                  Icons.chevron_right,
+                  color: textMuted,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1279,9 +1410,21 @@ _quickAction(
           const Color(0xFFF0E4FA),
 
       onDestinationSelected: (index) {
+        // Attendance
+        if (index == 1) {
+          _openAttendanceHistory();
+          return;
+        }
+
         // Leave
         if (index == 2) {
           _openLeavePage();
+          return;
+        }
+
+        // Profile
+        if (index == 3) {
+          _openProfilePage();
           return;
         }
 

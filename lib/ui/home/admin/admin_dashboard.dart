@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../models/admin_summary.dart';
 import '../../../models/user.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/dashboard_service.dart';
 import '../../auth/login_view.dart';
 
 // Leave
@@ -9,6 +11,28 @@ import '../../../ui/leave/manager/manager_leave_page.dart';
 
 // Employee
 import '../../../ui/employee/employee_list_page.dart';
+
+// Holiday
+import '../../holiday/holidays_page.dart';
+
+// Branch
+import '../../branch/branch_list_page.dart';
+
+// Attendance
+import '../../attendance/company_attendance_page.dart';
+
+// Profile
+import '../../profile/profile_page.dart';
+import '../../notification/notification_bell.dart';
+
+// Payroll
+import '../../payroll/payroll_management_page.dart';
+
+// Audit Trail
+import '../../audit/audit_log_page.dart';
+
+// Reports & Analytics
+import '../../report/reports_hub_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   final User user;
@@ -33,17 +57,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int selectedIndex = 0;
 
   // ============================================================
-  // ADMIN DATA
+  // ADMIN LIVE DATA & SERVICE
   // ============================================================
 
-  final int totalEmployees = 245;
-  final int present = 218;
-  final int onLeave = 12;
-  final int absent = 15;
+  final DashboardService _dashboardService = DashboardService();
+  AdminSummary _summary = AdminSummary.empty;
+  bool _isLoading = true;
+  String? _loadError;
 
-  final int pendingLeave = 14;
-  final int lateEmployees = 8;
-  final int missingCheckOut = 5;
+  @override
+  void initState() {
+    super.initState();
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final summary = await _dashboardService.getAdminSummary(
+        companyId: widget.user.companyId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _summary = summary;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   // ============================================================
   // LOGOUT
@@ -91,28 +141,93 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
 
     if (!mounted) return;
-
-    setState(() {});
+    _loadSummary();
   }
 
   // ============================================================
   // OPEN EMPLOYEES
   // ============================================================
 
- Future<void> _openEmployees() async {
-  await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EmployeeListPage(
-        user: widget.user,
+  Future<void> _openEmployees() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EmployeeListPage(
+          user: widget.user,
+        ),
       ),
-    ),
-  );
+    );
 
-  if (!mounted) return;
+    if (!mounted) return;
+    _loadSummary();
+  }
 
-  setState(() {});
-}
+  // ============================================================
+  // OPEN BRANCHES
+  // ============================================================
+
+  Future<void> _openBranches() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BranchListPage(
+          user: widget.user,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
+  }
+
+  // ============================================================
+  // OPEN ATTENDANCE ROSTER
+  // ============================================================
+
+  Future<void> _openCompanyAttendance() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CompanyAttendancePage(
+          user: widget.user,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
+  }
+
+  // ============================================================
+  // OPEN PROFILE
+  // ============================================================
+
+  Future<void> _openProfilePage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfilePage(
+          user: widget.user,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // OPEN REPORTS & ANALYTICS
+  // ============================================================
+
+  Future<void> _openReportsHub() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ReportsHubPage(),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
+  }
 
   // ============================================================
   // BUILD
@@ -123,40 +238,77 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Scaffold(
       backgroundColor: background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            bottom: 30,
-          ),
-          child: Column(
-            children: [
-              _header(),
+        child: RefreshIndicator(
+          color: violet,
+          onRefresh: _loadSummary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(
+              bottom: 30,
+            ),
+            child: Column(
+              children: [
+                _header(),
 
-              Transform.translate(
-                offset: const Offset(0, -24),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                  ),
-                  child: Column(
-                    children: [
-                      _organizationSummary(),
+                Transform.translate(
+                  offset: const Offset(0, -24),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                    ),
+                    child: Column(
+                      children: [
+                        if (_loadError != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.red.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Failed to load metrics. Pull down to retry.',
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
 
-                      const SizedBox(height: 24),
+                        _organizationSummary(),
 
-                      _attention(),
+                        const SizedBox(height: 24),
 
-                      const SizedBox(height: 24),
+                        _attention(),
 
-                      _attendanceOverview(),
+                        const SizedBox(height: 24),
 
-                      const SizedBox(height: 24),
+                        _attendanceOverview(),
 
-                      _quickActions(),
-                    ],
+                        const SizedBox(height: 24),
+
+                        _quickActions(),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -216,9 +368,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
 
+              const NotificationBell(
+                isHeaderButton: true,
+              ),
+
+              const SizedBox(width: 8),
+
               _headerButton(
-                Icons.notifications_none,
-                () {},
+                _isLoading ? Icons.sync : Icons.refresh,
+                _loadSummary,
               ),
 
               const SizedBox(width: 8),
@@ -234,17 +392,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
           Row(
             children: [
-              CircleAvatar(
-                radius: 29,
-                backgroundColor:
-                    Colors.white.withValues(
-                  alpha: 0.15,
-                ),
-                child: Text(
-                  _initials(name),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: _openProfilePage,
+                borderRadius: BorderRadius.circular(29),
+                child: CircleAvatar(
+                  radius: 29,
+                  backgroundColor:
+                      Colors.white.withValues(
+                    alpha: 0.15,
+                  ),
+                  child: Text(
+                    _initials(name),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
               ),
@@ -333,7 +496,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               _stat(
                 'Employees',
-                totalEmployees.toString(),
+                _summary.totalEmployees.toString(),
                 Icons.groups_outlined,
                 violet,
               ),
@@ -342,7 +505,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               _stat(
                 'Present',
-                present.toString(),
+                _summary.presentToday.toString(),
                 Icons.check_circle_outline,
                 Colors.green,
               ),
@@ -355,7 +518,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               _stat(
                 'On Leave',
-                onLeave.toString(),
+                _summary.onLeaveToday.toString(),
                 Icons.event_busy_outlined,
                 Colors.orange,
               ),
@@ -364,7 +527,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
               _stat(
                 'Absent',
-                absent.toString(),
+                _summary.absentToday.toString(),
                 Icons.person_off_outlined,
                 Colors.red,
               ),
@@ -466,7 +629,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _attentionItem(
                 Icons.pending_actions_outlined,
                 'Pending Leave Requests',
-                pendingLeave,
+                _summary.pendingLeaves,
                 Colors.orange,
               ),
 
@@ -475,7 +638,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _attentionItem(
                 Icons.timer_outlined,
                 'Late Employees',
-                lateEmployees,
+                _summary.lateEmployees,
                 Colors.red,
               ),
 
@@ -484,7 +647,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _attentionItem(
                 Icons.logout_outlined,
                 'Missing Check-outs',
-                missingCheckOut,
+                _summary.missingCheckOut,
                 violet,
               ),
             ],
@@ -581,6 +744,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   // ============================================================
 
   Widget _attendanceOverview() {
+    final double presentNorm = (_summary.presentPercentage / 100).clamp(0.0, 1.0);
+    final double lateNorm = (_summary.latePercentage / 100).clamp(0.0, 1.0);
+    final double leaveNorm = (_summary.leavePercentage / 100).clamp(0.0, 1.0);
+    final double absentNorm = (_summary.absentPercentage / 100).clamp(0.0, 1.0);
+
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
@@ -597,26 +765,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
             children: [
               _progress(
                 'Present',
-                0.89,
-                '89%',
+                presentNorm,
+                '${_summary.presentPercentage.toStringAsFixed(1)}%',
               ),
 
               _progress(
                 'Late',
-                0.04,
-                '4%',
+                lateNorm,
+                '${_summary.latePercentage.toStringAsFixed(1)}%',
               ),
 
               _progress(
                 'Leave',
-                0.05,
-                '5%',
+                leaveNorm,
+                '${_summary.leavePercentage.toStringAsFixed(1)}%',
               ),
 
               _progress(
                 'Absent',
-                0.02,
-                '2%',
+                absentNorm,
+                '${_summary.absentPercentage.toStringAsFixed(1)}%',
               ),
             ],
           ),
@@ -724,6 +892,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Icons.bar_chart_outlined,
         'title': 'Reports',
       },
+      {
+        'icon':
+            Icons.celebration_outlined,
+        'title': 'Holidays',
+      },
+      {
+        'icon':
+            Icons.account_balance_wallet_outlined,
+        'title': 'Payroll',
+      },
     ];
 
     if (widget.user.roleId == 1) {
@@ -737,6 +915,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
           'icon':
               Icons.security_outlined,
           'title': 'Roles',
+        },
+        {
+          'icon':
+              Icons.history_edu_outlined,
+          'title': 'Audit Trail',
         },
       ]);
     }
@@ -798,6 +981,77 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   if (title == 'Leave' ||
                       title == 'Approvals') {
                     await _openLeaveApprovals();
+                    return;
+                  }
+
+                  // ==================================================
+                  // HOLIDAYS
+                  // ==================================================
+
+                  if (title == 'Holidays') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HolidaysPage(
+                          user: widget.user,
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ==================================================
+                  // ATTENDANCE
+                  // ==================================================
+
+                  if (title == 'Attendance') {
+                    await _openCompanyAttendance();
+                    return;
+                  }
+
+                  // ==================================================
+                  // BRANCHES
+                  // ==================================================
+
+                  if (title == 'Branches') {
+                    await _openBranches();
+                    return;
+                  }
+
+                  // ==================================================
+                  // PAYROLL
+                  // ==================================================
+
+                  if (title == 'Payroll') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PayrollManagementPage(),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ==================================================
+                  // AUDIT TRAIL
+                  // ==================================================
+
+                  if (title == 'Audit Trail') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AuditLogPage(),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ==================================================
+                  // REPORTS
+                  // ==================================================
+
+                  if (title == 'Reports') {
+                    await _openReportsHub();
                     return;
                   }
 
@@ -998,6 +1252,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         if (index == 1) {
           await _openEmployees();
+
+          if (!mounted) return;
+
+          setState(() {
+            selectedIndex = 0;
+          });
+
+          return;
+        }
+
+        // ==================================================
+        // REPORTS
+        // ==================================================
+
+        if (index == 2) {
+          await _openReportsHub();
+
+          if (!mounted) return;
+
+          setState(() {
+            selectedIndex = 0;
+          });
+
+          return;
+        }
+
+        // ==================================================
+        // PROFILE
+        // ==================================================
+
+        if (index == 3) {
+          await _openProfilePage();
 
           if (!mounted) return;
 

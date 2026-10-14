@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/network/api_client.dart';
 import 'ui/auth/auth_gate.dart';
 
 void main() {
@@ -14,6 +15,7 @@ class AlienHrApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: ApiClient.navigatorKey,
       title: 'AlienHR',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
