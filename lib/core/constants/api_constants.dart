@@ -170,6 +170,28 @@ static String leaveBalances(int employeeId, {int? year}) {
 
   static String payslipDetails(int id) => '/api/Payroll/payslip/$id';
 
+  static String employeePayrollPreview(int employeeId, {int? year, int? month, String? startDate, String? endDate}) {
+    final params = <String>[];
+    if (year != null) params.add('year=$year');
+    if (month != null) params.add('month=$month');
+    if (startDate != null && startDate.isNotEmpty) params.add('startDate=$startDate');
+    if (endDate != null && endDate.isNotEmpty) params.add('endDate=$endDate');
+    final query = params.isNotEmpty ? '?${params.join('&')}' : '';
+    return '/api/Payroll/employee/$employeeId/preview$query';
+  }
+
+  static const String individualPayroll = '/api/Payroll/individual';
+  static String deletePayslip(int id) => '/api/Payroll/payslip/$id';
+
+  // ============================================================
+  // SYSTEM NOTICES / POSTERS
+  // ============================================================
+
+  static const String activeNotice = '/api/Notice/active';
+  static const String notices = '/api/Notice';
+  static String toggleNotice(int id) => '/api/Notice/$id/toggle';
+  static String deleteNotice(int id) => '/api/Notice/$id';
+
   // ============================================================
   // NOTIFICATIONS
   // ============================================================

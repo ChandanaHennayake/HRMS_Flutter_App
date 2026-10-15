@@ -14,6 +14,7 @@ import '../../holiday/holidays_page.dart';
 import '../../leave/manager/manager_leave_page.dart';
 import '../../notification/notification_bell.dart';
 import '../../payroll/payroll_management_page.dart';
+import '../../payroll/individual_payroll_page.dart';
 import '../../profile/profile_page.dart';
 import '../../report/reports_hub_page.dart';
 
@@ -207,6 +208,18 @@ class _ManagerDashboardState
           branchId: _selectedBranchId > 0 ? _selectedBranchId : widget.user.branchId,
           branchName: _selectedBranchName.isNotEmpty ? _selectedBranchName : _summary.branchName,
         ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
+  }
+
+  Future<void> _openIndividualPayroll() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const IndividualPayrollPage(),
       ),
     );
 
@@ -1050,6 +1063,12 @@ class _ManagerDashboardState
               Icons.account_balance_wallet_outlined,
               'Payroll Portal',
               onTap: _openPayrollWorkspace,
+            ),
+
+            _action(
+              Icons.calculate_outlined,
+              'Emp Payroll',
+              onTap: _openIndividualPayroll,
             ),
 
             _action(

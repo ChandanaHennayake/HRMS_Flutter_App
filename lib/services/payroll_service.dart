@@ -127,6 +127,60 @@ class PayrollService {
     throw Exception(_extractError(response.body));
   }
 
+  /// Get employee payroll preview (base salary, absent days, daily rate, allowances/deductions)
+  Future<EmployeePayrollPreview> getEmployeePayrollPreview(
+    int employeeId, {
+    int? year,
+    int? month,
+    String? startDate,
+    String? endDate,
+  }) async {
+    final response = await _apiClient.get(
+      ApiConstants.employeePayrollPreview(
+        employeeId,
+        year: year,
+        month: month,
+        startDate: startDate,
+        endDate: endDate,
+      ),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final json = jsonDecode(response.body);
+      return EmployeePayrollPreview.fromJson(json['data']);
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  /// Save or update an individual employee's payslip
+  Future<Payslip> saveIndividualPayroll(Map<String, dynamic> request) async {
+    final response = await _apiClient.post(
+      ApiConstants.individualPayroll,
+      body: request,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final json = jsonDecode(response.body);
+      return Payslip.fromJson(json['data']);
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  /// Delete a payslip
+  Future<bool> deletePayslip(int id) async {
+    final response = await _apiClient.delete(
+      ApiConstants.deletePayslip(id),
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return true;
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
   String _extractError(String body) {
     if (body.trim().isEmpty) {
       return 'Payroll request failed.';

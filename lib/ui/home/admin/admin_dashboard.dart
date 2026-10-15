@@ -27,6 +27,10 @@ import '../../notification/notification_bell.dart';
 
 // Payroll
 import '../../payroll/payroll_management_page.dart';
+import '../../payroll/individual_payroll_page.dart';
+
+// Notices
+import '../../notice/notice_management_page.dart';
 
 // Audit Trail
 import '../../audit/audit_log_page.dart';
@@ -902,10 +906,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Icons.account_balance_wallet_outlined,
         'title': 'Payroll',
       },
+      {
+        'icon':
+            Icons.calculate_outlined,
+        'title': 'Emp Payroll',
+      },
     ];
 
     if (widget.user.roleId == 1) {
       actions.addAll([
+        {
+          'icon':
+              Icons.campaign_outlined,
+          'title': 'Notices',
+        },
         {
           'icon':
               Icons.manage_accounts_outlined,
@@ -1027,6 +1041,34 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => const PayrollManagementPage(),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ==================================================
+                  // INDIVIDUAL EMPLOYEE PAYROLL
+                  // ==================================================
+
+                  if (title == 'Emp Payroll') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const IndividualPayrollPage(),
+                      ),
+                    );
+                    return;
+                  }
+
+                  // ==================================================
+                  // SYSTEM NOTICES & POSTERS
+                  // ==================================================
+
+                  if (title == 'Notices') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NoticeManagementPage(),
                       ),
                     );
                     return;

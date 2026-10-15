@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/storage/secure_storage.dart';
 import '../../models/attendance_correction.dart';
 import '../../models/attendance_history.dart';
 import '../../models/user.dart';
@@ -83,7 +84,15 @@ class _AttendanceHistoryPageState
   // ============================================================
 
   Future<void> _loadAttendance() async {
-    if (employeeId <= 0) {
+    int targetEmployeeId = employeeId;
+    if (targetEmployeeId <= 0) {
+      final storedId = await SecureStorage.getEmployeeId();
+      if (storedId != null && storedId > 0) {
+        targetEmployeeId = storedId;
+      }
+    }
+
+    if (targetEmployeeId <= 0) {
       _showError(
         'Employee ID is not available for this account.',
       );
@@ -100,7 +109,7 @@ class _AttendanceHistoryPageState
     try {
       final result =
           await _attendanceService.getAttendanceHistory(
-        employeeId: employeeId,
+        employeeId: targetEmployeeId,
         fromDate: _fromDate,
         toDate: _toDate,
       );

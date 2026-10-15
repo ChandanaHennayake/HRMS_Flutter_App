@@ -3,6 +3,8 @@ import '../../models/payroll.dart';
 import '../../services/payroll_service.dart';
 import 'payslip_page.dart';
 
+import 'individual_payroll_page.dart';
+
 class PayrollManagementPage extends StatefulWidget {
   final int companyId;
   final int? branchId;
@@ -211,9 +213,22 @@ class _PayrollManagementPageState extends State<PayrollManagementPage> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_rounded),
+            icon: const Icon(Icons.person_add_alt_1_rounded, color: violet),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const IndividualPayrollPage(),
+                ),
+              );
+              _loadRuns();
+            },
+            tooltip: 'Individual Employee Payroll',
+          ),
+          IconButton(
+            icon: const Icon(Icons.playlist_add_rounded),
             onPressed: _showProcessDialog,
-            tooltip: 'Process Payroll',
+            tooltip: 'Batch Process Payroll',
           ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -221,6 +236,21 @@ class _PayrollManagementPageState extends State<PayrollManagementPage> {
             tooltip: 'Refresh',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const IndividualPayrollPage(),
+            ),
+          );
+          _loadRuns();
+        },
+        backgroundColor: violet,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: const Text('Individual Payroll', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

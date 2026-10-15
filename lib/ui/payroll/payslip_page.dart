@@ -59,6 +59,40 @@ class _PayslipPageState extends State<PayslipPage> {
     }
   }
 
+  Future<void> _deletePayslip() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Payslip'),
+        content: const Text('Are you sure you want to delete this payslip record?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: crimson, foregroundColor: Colors.white),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await _payrollService.deletePayslip(widget.payslipId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payslip deleted successfully.')),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete: $e'), backgroundColor: crimson),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +106,11 @@ class _PayslipPageState extends State<PayslipPage> {
         foregroundColor: slateDark,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, color: crimson),
+            onPressed: _deletePayslip,
+            tooltip: 'Delete Payslip',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _loadPayslip,

@@ -306,3 +306,124 @@ class PayslipItem {
     );
   }
 }
+
+class PayrollManualItem {
+  String name;
+  double amount;
+  bool isEpfApplicable;
+
+  PayrollManualItem({
+    required this.name,
+    required this.amount,
+    this.isEpfApplicable = false,
+  });
+
+  factory PayrollManualItem.fromJson(Map<String, dynamic> json) {
+    return PayrollManualItem(
+      name: json['name']?.toString() ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      isEpfApplicable: json['isEpfApplicable'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'amount': amount,
+      'isEpfApplicable': isEpfApplicable,
+    };
+  }
+}
+
+class EmployeePayrollPreview {
+  final int employeeId;
+  final String employeeName;
+  final String employeeCode;
+  final String? departmentName;
+  final String? designationName;
+  final String? branchName;
+  final String? bankName;
+  final String? bankAccountNo;
+  final double baseSalary;
+  final String startDate;
+  final String endDate;
+  final int totalCalendarDays;
+  final int workedDays;
+  final int holidaysCount;
+  final int sundaysCount;
+  final double workingDaysDivisor;
+  final double suggestedDailyRate;
+  final double detectedAbsentDays;
+  final double suggestedNoPayDeduction;
+  final double otHours;
+  final double hourlyOtRate;
+  final double suggestedOtPay;
+  final List<PayrollManualItem> standardAllowances;
+  final List<PayrollManualItem> standardDeductions;
+
+  EmployeePayrollPreview({
+    required this.employeeId,
+    required this.employeeName,
+    required this.employeeCode,
+    this.departmentName,
+    this.designationName,
+    this.branchName,
+    this.bankName,
+    this.bankAccountNo,
+    required this.baseSalary,
+    this.startDate = '',
+    this.endDate = '',
+    this.totalCalendarDays = 0,
+    this.workedDays = 0,
+    this.holidaysCount = 0,
+    this.sundaysCount = 0,
+    required this.workingDaysDivisor,
+    required this.suggestedDailyRate,
+    required this.detectedAbsentDays,
+    required this.suggestedNoPayDeduction,
+    this.otHours = 0.0,
+    this.hourlyOtRate = 0.0,
+    this.suggestedOtPay = 0.0,
+    this.standardAllowances = const [],
+    this.standardDeductions = const [],
+  });
+
+  factory EmployeePayrollPreview.fromJson(Map<String, dynamic> json) {
+    var rawAllowances = json['standardAllowances'] as List<dynamic>?;
+    List<PayrollManualItem> parsedAllowances = rawAllowances != null
+        ? rawAllowances.map((a) => PayrollManualItem.fromJson(a)).toList()
+        : [];
+
+    var rawDeductions = json['standardDeductions'] as List<dynamic>?;
+    List<PayrollManualItem> parsedDeductions = rawDeductions != null
+        ? rawDeductions.map((d) => PayrollManualItem.fromJson(d)).toList()
+        : [];
+
+    return EmployeePayrollPreview(
+      employeeId: (json['employeeId'] as num?)?.toInt() ?? 0,
+      employeeName: json['employeeName']?.toString() ?? '',
+      employeeCode: json['employeeCode']?.toString() ?? '',
+      departmentName: json['departmentName']?.toString(),
+      designationName: json['designationName']?.toString(),
+      branchName: json['branchName']?.toString(),
+      bankName: json['bankName']?.toString(),
+      bankAccountNo: json['bankAccountNo']?.toString(),
+      baseSalary: (json['baseSalary'] as num?)?.toDouble() ?? 0.0,
+      startDate: json['startDate']?.toString() ?? '',
+      endDate: json['endDate']?.toString() ?? '',
+      totalCalendarDays: (json['totalCalendarDays'] as num?)?.toInt() ?? 0,
+      workedDays: (json['workedDays'] as num?)?.toInt() ?? 0,
+      holidaysCount: (json['holidaysCount'] as num?)?.toInt() ?? 0,
+      sundaysCount: (json['sundaysCount'] as num?)?.toInt() ?? 0,
+      workingDaysDivisor: (json['workingDaysDivisor'] as num?)?.toDouble() ?? 26.0,
+      suggestedDailyRate: (json['suggestedDailyRate'] as num?)?.toDouble() ?? 0.0,
+      detectedAbsentDays: (json['detectedAbsentDays'] as num?)?.toDouble() ?? 0.0,
+      suggestedNoPayDeduction: (json['suggestedNoPayDeduction'] as num?)?.toDouble() ?? 0.0,
+      otHours: (json['otHours'] as num?)?.toDouble() ?? 0.0,
+      hourlyOtRate: (json['hourlyOtRate'] as num?)?.toDouble() ?? 0.0,
+      suggestedOtPay: (json['suggestedOtPay'] as num?)?.toDouble() ?? 0.0,
+      standardAllowances: parsedAllowances,
+      standardDeductions: parsedDeductions,
+    );
+  }
+}

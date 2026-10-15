@@ -95,10 +95,213 @@ class _HolidaysPageState extends State<HolidaysPage> {
     }
   }
 
+  bool get _canManage =>
+      widget.user != null &&
+      (widget.user!.roleId == 1 ||
+          widget.user!.roleId == 2 ||
+          widget.user!.roleId == 3 ||
+          widget.user!.role.toLowerCase().contains('admin') ||
+          widget.user!.role.toLowerCase().contains('manager'));
+
+  String _formatDate(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  Future<void> _showHolidayDialog({Holiday? holiday}) async {
+    final bool isEdit = holiday != null;
+    final nameCtrl = TextEditingController(text: holiday?.holidayName ?? '');
+    final descCtrl = TextEditingController(text: holiday?.description ?? '');
+    DateTime selectedDate = holiday?.parsedDate ?? DateTime(_selectedYear, DateTime.now().month, DateTime.now().day);
+    bool isActive = holiday?.isActive ?? true;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(isEdit ? 'Edit Holiday' : 'Add New Holiday'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Holiday Name *',
+                    hintText: 'e.g. Independence Day, Christmas',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(_selectedYear - 2),
+                      lastDate: DateTime(_selectedYear + 3),
+                    );
+                    if (picked != null) {
+                      setDlgState(() => selectedDate = picked);
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Holiday Date *',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_month, color: violet),
+                    ),
+                    child: Text(
+                      _formatDate(selectedDate),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (Optional)',
+                    hintText: 'e.g. Public and bank holiday',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (isEdit) ...[
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Is Active', style: TextStyle(fontSize: 14)),
+                    value: isActive,
+                    activeThumbColor: violet,
+                    onChanged: (val) => setDlgState(() => isActive = val),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter a holiday name.')),
+                  );
+                  return;
+                }
+
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.pop(ctx);
+                setState(() => _isLoading = true);
+
+                try {
+                  final formattedDate = _formatDate(selectedDate);
+                  if (isEdit) {
+                    await _holidayService.updateHoliday(holiday.id, {
+                      'holidayDate': formattedDate,
+                      'holidayName': name,
+                      'description': descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : null,
+                      'isActive': isActive,
+                    });
+                  } else {
+                    await _holidayService.createHoliday({
+                      'companyId': widget.user?.companyId != null && widget.user!.companyId > 0
+                          ? widget.user!.companyId
+                          : 1,
+                      'holidayDate': formattedDate,
+                      'holidayName': name,
+                      'description': descCtrl.text.trim().isNotEmpty ? descCtrl.text.trim() : null,
+                      'createdBy': widget.user?.userId,
+                    });
+                  }
+
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(isEdit ? 'Holiday updated successfully!' : 'Holiday added successfully!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                  await _loadHolidays();
+                } catch (e) {
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                    );
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: violet, foregroundColor: Colors.white),
+              child: Text(isEdit ? 'Update' : 'Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteHoliday(Holiday holiday) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Holiday'),
+        content: Text('Are you sure you want to delete "${holiday.holidayName}" (${holiday.holidayDate})?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _isLoading = true);
+      try {
+        await _holidayService.deleteHoliday(holiday.id, deletedBy: widget.user?.userId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Holiday deleted successfully!'), backgroundColor: Colors.green),
+          );
+        }
+        await _loadHolidays();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Delete failed: $e'), backgroundColor: Colors.red),
+          );
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: background,
+      floatingActionButton: _canManage
+          ? FloatingActionButton.extended(
+              onPressed: () => _showHolidayDialog(),
+              backgroundColor: violet,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Holiday'),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -475,6 +678,40 @@ class _HolidaysPageState extends State<HolidaysPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                        ),
+                      if (_canManage)
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 20, color: textMuted),
+                          padding: EdgeInsets.zero,
+                          onSelected: (val) {
+                            if (val == 'edit') {
+                              _showHolidayDialog(holiday: holiday);
+                            } else if (val == 'delete') {
+                              _confirmDeleteHoliday(holiday);
+                            }
+                          },
+                          itemBuilder: (ctx) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 18, color: violet),
+                                  SizedBox(width: 8),
+                                  Text('Edit'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text('Delete', style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),

@@ -87,4 +87,86 @@ class HolidayService {
 
     return null;
   }
+
+  // ============================================================
+  // CREATE HOLIDAY
+  // POST: /api/Holiday
+  // ============================================================
+
+  Future<Holiday> createHoliday(Map<String, dynamic> data) async {
+    final response = await _apiClient.post(
+      ApiConstants.holidays,
+      body: data,
+      requiresAuth: true,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      final itemData = decoded is Map<String, dynamic> && decoded['data'] != null
+          ? decoded['data']
+          : decoded;
+      return Holiday.fromJson(itemData as Map<String, dynamic>);
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  // ============================================================
+  // UPDATE HOLIDAY
+  // PUT: /api/Holiday/{id}
+  // ============================================================
+
+  Future<Holiday> updateHoliday(int id, Map<String, dynamic> data) async {
+    final response = await _apiClient.put(
+      '${ApiConstants.holidays}/$id',
+      body: data,
+      requiresAuth: true,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final decoded = jsonDecode(response.body);
+      final itemData = decoded is Map<String, dynamic> && decoded['data'] != null
+          ? decoded['data']
+          : decoded;
+      return Holiday.fromJson(itemData as Map<String, dynamic>);
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  // ============================================================
+  // DELETE HOLIDAY
+  // DELETE: /api/Holiday/{id}
+  // ============================================================
+
+  Future<bool> deleteHoliday(int id, {int? deletedBy}) async {
+    String url = '${ApiConstants.holidays}/$id';
+    if (deletedBy != null && deletedBy > 0) {
+      url += '?deletedBy=$deletedBy';
+    }
+
+    final response = await _apiClient.delete(
+      url,
+      requiresAuth: true,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return true;
+    }
+
+    throw Exception(_extractError(response.body));
+  }
+
+  String _extractError(String body) {
+    if (body.trim().isEmpty) return 'Holiday operation failed.';
+    try {
+      final data = jsonDecode(body);
+      if (data is Map<String, dynamic>) {
+        return data['message']?.toString() ??
+            data['title']?.toString() ??
+            'Holiday operation failed.';
+      }
+    } catch (_) {}
+    return body;
+  }
 }

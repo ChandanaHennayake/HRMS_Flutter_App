@@ -8,6 +8,7 @@ class LeaveActionRequest {
   Map<String, dynamic> toJson() {
     return {
       'remarks': remarks,
+      'comment': remarks,
     };
   }
 }

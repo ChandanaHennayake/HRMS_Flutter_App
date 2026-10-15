@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../../ui/auth/login_view.dart';
 import '../constants/api_constants.dart';
 import '../storage/secure_storage.dart';
+import 'connectivity_service.dart';
 
 class ApiClient {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -21,16 +24,27 @@ class ApiClient {
       requiresAuth: requiresAuth,
     );
 
-    final response = await http
-        .post(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: headers,
-          body: jsonEncode(body ?? {}),
-        )
-        .timeout(const Duration(seconds: 30));
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          )
+          .timeout(const Duration(seconds: 30));
 
-    await _handleResponse(response, requiresAuth);
-    return response;
+      await _handleResponse(response, requiresAuth);
+      return response;
+    } on SocketException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Please check your internet connection.');
+    } on TimeoutException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('Connection timed out. Please check your network connection.');
+    } on http.ClientException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Unable to reach server.');
+    }
   }
 
   Future<http.Response> get(
@@ -41,15 +55,26 @@ class ApiClient {
       requiresAuth: requiresAuth,
     );
 
-    final response = await http
-        .get(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: headers,
-        )
-        .timeout(const Duration(seconds: 30));
+    try {
+      final response = await http
+          .get(
+            Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 30));
 
-    await _handleResponse(response, requiresAuth);
-    return response;
+      await _handleResponse(response, requiresAuth);
+      return response;
+    } on SocketException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Please check your internet connection.');
+    } on TimeoutException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('Connection timed out. Please check your network connection.');
+    } on http.ClientException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Unable to reach server.');
+    }
   }
 
   Future<http.Response> delete(
@@ -60,17 +85,26 @@ class ApiClient {
       requiresAuth: requiresAuth,
     );
 
-    final response = await http
-        .delete(
-          Uri.parse(
-            '${ApiConstants.baseUrl}$endpoint',
-          ),
-          headers: headers,
-        )
-        .timeout(const Duration(seconds: 30));
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 30));
 
-    await _handleResponse(response, requiresAuth);
-    return response;
+      await _handleResponse(response, requiresAuth);
+      return response;
+    } on SocketException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Please check your internet connection.');
+    } on TimeoutException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('Connection timed out. Please check your network connection.');
+    } on http.ClientException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Unable to reach server.');
+    }
   }
 
   Future<http.Response> put(
@@ -82,18 +116,28 @@ class ApiClient {
       requiresAuth: requiresAuth,
     );
 
-    final response = await http
-        .put(
-          Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-          headers: headers,
-          body: jsonEncode(body ?? {}),
-        )
-        .timeout(const Duration(seconds: 30));
+    try {
+      final response = await http
+          .put(
+            Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          )
+          .timeout(const Duration(seconds: 30));
 
-    await _handleResponse(response, requiresAuth);
-    return response;
+      await _handleResponse(response, requiresAuth);
+      return response;
+    } on SocketException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Please check your internet connection.');
+    } on TimeoutException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('Connection timed out. Please check your network connection.');
+    } on http.ClientException {
+      ConnectivityService.showOfflineAlert();
+      throw Exception('You are offline. Unable to reach server.');
+    }
   }
-
 
   Future<void> _handleResponse(
     http.Response response,
@@ -101,6 +145,19 @@ class ApiClient {
   ) async {
     if (requiresAuth && response.statusCode == 401) {
       await SecureStorage.clear();
+
+      final messenger = ConnectivityService.messengerKey.currentState;
+      if (messenger != null) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Session expired. Please log in again.'),
+            backgroundColor: Color(0xFFDC2626),
+            duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
       if (onUnauthorized != null) {
         onUnauthorized!();
       } else if (navigatorKey.currentState != null) {

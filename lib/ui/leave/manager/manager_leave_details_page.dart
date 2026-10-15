@@ -117,16 +117,18 @@ class _ManagerLeaveDetailsPageState
             : _remarksController.text.trim(),
       );
 
+      final reviewerId = widget.user.employeeId > 0 ? widget.user.employeeId : widget.user.userId;
+
       if (isApprove) {
         await _leaveService.approveLeave(
           leaveRequestId: widget.leave.id,
-          approvedBy: widget.user.employeeId,
+          approvedBy: reviewerId,
           request: request,
         );
       } else {
         await _leaveService.rejectLeave(
           leaveRequestId: widget.leave.id,
-          rejectedBy: widget.user.employeeId,
+          rejectedBy: reviewerId,
           request: request,
         );
       }
