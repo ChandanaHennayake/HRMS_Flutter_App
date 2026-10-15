@@ -24,7 +24,7 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        NoticeDialog.checkAndShow(context);
+        NoticeDialog.checkAndShow(context, widget.user.role);
       }
     });
   }

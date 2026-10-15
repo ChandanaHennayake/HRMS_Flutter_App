@@ -9,9 +9,9 @@ class NoticeDialog extends StatelessWidget {
 
   const NoticeDialog({super.key, required this.notice});
 
-  static Future<void> checkAndShow(BuildContext context) async {
+  static Future<void> checkAndShow(BuildContext context, [String? role]) async {
     try {
-      final notice = await NoticeService().getActiveNotice();
+      final notice = await NoticeService().getActiveNotice(role);
       if (notice != null && context.mounted) {
         showDialog(
           context: context,

@@ -7,9 +7,12 @@ class NoticeService {
   final ApiClient _apiClient = ApiClient();
 
   /// Fetch currently active notice for users popup
-  Future<SystemNotice?> getActiveNotice() async {
+  Future<SystemNotice?> getActiveNotice([String? role]) async {
     try {
-      final response = await _apiClient.get(ApiConstants.activeNotice);
+      final endpoint = role != null && role.isNotEmpty && role != 'All'
+          ? '${ApiConstants.activeNotice}?role=$role'
+          : ApiConstants.activeNotice;
+      final response = await _apiClient.get(endpoint);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final json = jsonDecode(response.body);
         if (json['data'] != null) {
@@ -47,7 +50,9 @@ class NoticeService {
         'title': title,
         'message': message,
         'imageUrl': imageUrl,
+        'targetRole': targetAudience ?? 'All',
         'targetAudience': targetAudience ?? 'All',
+        'isActive': true,
         'validUntil': validUntil,
       },
     );

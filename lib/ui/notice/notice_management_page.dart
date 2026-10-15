@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../models/notice.dart';
 import '../../services/notice_service.dart';
@@ -68,83 +69,132 @@ class _NoticeManagementPageState extends State<NoticeManagementPage> {
     }
   }
 
+  Widget _buildThumbnail(String url) {
+    if (url.startsWith('data:image')) {
+      try {
+        final commaIdx = url.indexOf(',');
+        final base64Str = commaIdx != -1 ? url.substring(commaIdx + 1) : url;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          height: 140,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        );
+      } catch (_) {
+        return const SizedBox.shrink();
+      }
+    }
+
+    return Image.network(
+      url,
+      height: 140,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+    );
+  }
+
   void _showAddNoticeDialog() {
     final titleController = TextEditingController();
     final messageController = TextEditingController();
     final imageUrlController = TextEditingController();
+    String selectedRole = 'All';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Create Announcement Poster'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
-                  hintText: 'e.g. Office Holiday Notice',
-                  border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Create Announcement Poster'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title *',
+                    hintText: 'e.g. Office Holiday Notice',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: messageController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Message *',
-                  hintText: 'Details of the announcement...',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: messageController,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'Message *',
+                    hintText: 'Details of the announcement...',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: imageUrlController,
-                decoration: const InputDecoration(
-                  labelText: 'Poster Image URL (Optional)',
-                  hintText: 'https://... or data:image/...',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.image),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedRole,
+                  decoration: const InputDecoration(
+                    labelText: 'Target Audience',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'All', child: Text('All Users (Everyone)')),
+                    DropdownMenuItem(value: 'Employee', child: Text('Employees Only')),
+                    DropdownMenuItem(value: 'Manager', child: Text('Managers Only')),
+                    DropdownMenuItem(value: 'Admin', child: Text('Admins Only')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setDialogState(() => selectedRole = val);
+                  },
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: imageUrlController,
+                  decoration: const InputDecoration(
+                    labelText: 'Poster Image URL (Optional)',
+                    hintText: 'https://... or data:image/...',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.image),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (titleController.text.trim().isEmpty || messageController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill title and message')),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx);
+                try {
+                  await _service.createNotice(
+                    title: titleController.text.trim(),
+                    message: messageController.text.trim(),
+                    targetAudience: selectedRole,
+                    imageUrl: imageUrlController.text.trim().isNotEmpty ? imageUrlController.text.trim() : null,
+                  );
+                  _loadNotices();
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+              child: const Text('Post Notice'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.trim().isEmpty || messageController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please fill title and message')),
-                );
-                return;
-              }
-              Navigator.pop(ctx);
-              try {
-                await _service.createNotice(
-                  title: titleController.text.trim(),
-                  message: messageController.text.trim(),
-                  imageUrl: imageUrlController.text.trim().isNotEmpty ? imageUrlController.text.trim() : null,
-                );
-                _loadNotices();
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('Post Notice'),
-          ),
-        ],
       ),
     );
   }
@@ -194,13 +244,7 @@ class _NoticeManagementPageState extends State<NoticeManagementPage> {
                             if (n.imageUrl != null && n.imageUrl!.isNotEmpty)
                               ClipRRect(
                                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                child: Image.network(
-                                  n.imageUrl!,
-                                  height: 140,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                                ),
+                                child: _buildThumbnail(n.imageUrl!),
                               ),
                             ListTile(
                               title: Text(
@@ -213,7 +257,9 @@ class _NoticeManagementPageState extends State<NoticeManagementPage> {
                                   const SizedBox(height: 4),
                                   Text(n.message, maxLines: 3, overflow: TextOverflow.ellipsis),
                                   const SizedBox(height: 6),
-                                  Row(
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -230,6 +276,24 @@ class _NoticeManagementPageState extends State<NoticeManagementPage> {
                                             fontSize: 11,
                                             fontWeight: FontWeight.w600,
                                             color: n.isActive ? Colors.green.shade800 : Colors.grey.shade700,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: Colors.blue.shade300,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Audience: ${n.targetAudience ?? "All"}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.blue.shade800,
                                           ),
                                         ),
                                       ),

@@ -17,6 +17,7 @@ import '../../payroll/payroll_management_page.dart';
 import '../../payroll/individual_payroll_page.dart';
 import '../../profile/profile_page.dart';
 import '../../report/reports_hub_page.dart';
+import '../../notice/notice_management_page.dart';
 
 class ManagerDashboard extends StatefulWidget {
   final User user;
@@ -1075,6 +1076,17 @@ class _ManagerDashboardState
               Icons.bar_chart_outlined,
               'Branch Reports',
               onTap: _openReportsHub,
+            ),
+
+            _action(
+              Icons.campaign_outlined,
+              'Notices & Posters',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NoticeManagementPage()),
+                );
+              },
             ),
           ],
         ),

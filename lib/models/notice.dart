@@ -26,7 +26,7 @@ class SystemNotice {
       message: json['message']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString(),
       isActive: json['isActive'] as bool? ?? true,
-      targetAudience: json['targetAudience']?.toString(),
+      targetAudience: json['targetRole']?.toString() ?? json['targetAudience']?.toString() ?? 'All',
       validUntil: json['validUntil']?.toString(),
       createdAt: json['createdAt']?.toString() ?? '',
     );
@@ -40,6 +40,7 @@ class SystemNotice {
       'imageUrl': imageUrl,
       'isActive': isActive,
       'targetAudience': targetAudience,
+      'targetRole': targetAudience,
       'validUntil': validUntil,
     };
   }
