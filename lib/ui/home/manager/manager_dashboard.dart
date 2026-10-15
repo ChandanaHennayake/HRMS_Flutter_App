@@ -1100,20 +1100,22 @@ class _ManagerDashboardState
 
   Widget _card({
     required Widget child,
-    EdgeInsets padding =
-        const EdgeInsets.all(20),
+    EdgeInsets padding = const EdgeInsets.all(20),
   }) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: const Color(0xFFEEE8F3),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFEEE8F3),
+          ),
         ),
+        child: child,
       ),
-      child: child,
     );
   }
 
