@@ -20,6 +20,7 @@ import '../../branch/branch_list_page.dart';
 
 // Attendance
 import '../../attendance/company_attendance_page.dart';
+import '../../attendance/manager_attendance_corrections_page.dart';
 
 // Profile
 import '../../profile/profile_page.dart';
@@ -37,6 +38,9 @@ import '../../audit/audit_log_page.dart';
 
 // Reports & Analytics
 import '../../report/reports_hub_page.dart';
+
+// User Management
+import '../../user/user_management_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   final User user;
@@ -139,6 +143,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
       context,
       MaterialPageRoute(
         builder: (_) => ManagerLeavePage(
+          user: widget.user,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
+  }
+
+  // ============================================================
+  // OPEN ATTENDANCE CORRECTIONS
+  // ============================================================
+
+  Future<void> _openAttendanceCorrections() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ManagerAttendanceCorrectionsPage(
           user: widget.user,
         ),
       ),
@@ -640,6 +662,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const Divider(height: 1),
 
               _attentionItem(
+                Icons.edit_calendar_outlined,
+                'Pending Corrections',
+                _summary.pendingCorrections,
+                violet,
+              ),
+
+              const Divider(height: 1),
+
+              _attentionItem(
                 Icons.timer_outlined,
                 'Late Employees',
                 _summary.lateEmployees,
@@ -671,6 +702,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       onTap: () async {
         if (title == 'Pending Leave Requests') {
           await _openLeaveApprovals();
+          return;
+        }
+
+        if (title == 'Pending Corrections') {
+          await _openAttendanceCorrections();
           return;
         }
 
@@ -888,6 +924,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       },
       {
         'icon':
+            Icons.edit_calendar_outlined,
+        'title': 'Corrections',
+      },
+      {
+        'icon':
             Icons.business_outlined,
         'title': 'Branches',
       },
@@ -999,6 +1040,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   }
 
                   // ==================================================
+                  // ATTENDANCE CORRECTIONS
+                  // ==================================================
+
+                  if (title == 'Corrections') {
+                    await _openAttendanceCorrections();
+                    return;
+                  }
+
+                  // ==================================================
                   // HOLIDAYS
                   // ==================================================
 
@@ -1094,6 +1144,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                   if (title == 'Reports') {
                     await _openReportsHub();
+                    return;
+                  }
+
+                  // ==================================================
+                  // USER MANAGEMENT
+                  // ==================================================
+
+                  if (title == 'Users') {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserManagementPage(
+                          user: widget.user,
+                        ),
+                      ),
+                    );
                     return;
                   }
 

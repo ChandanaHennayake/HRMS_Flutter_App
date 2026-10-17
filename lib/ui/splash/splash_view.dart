@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../../core/storage/secure_storage.dart';
 import '../auth/login_view.dart';
+import '../home/home_view.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -14,9 +17,6 @@ class _SplashViewState extends State<SplashView>
 
   late final Animation<double> _logoScale;
   late final Animation<double> _logoFade;
-  late final Animation<Offset> _titleSlide;
-  late final Animation<double> _titleFade;
-  late final Animation<double> _taglineFade;
   late final Animation<Offset> _featuresSlide;
   late final Animation<double> _featuresFade;
   late final Animation<double> _progressFade;
@@ -27,87 +27,90 @@ class _SplashViewState extends State<SplashView>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: const Duration(milliseconds: 2400),
     );
 
-    // Logo: scale + fade in first (0% - 35%)
-    _logoScale = Tween<double>(begin: 0.6, end: 1.0).animate(
+    // Logo scale + fade in (0% - 40%)
+    _logoScale = Tween<double>(begin: 0.75, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.35, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.45, curve: Curves.easeOutBack),
       ),
     );
     _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
+        curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
       ),
     );
 
-    // Title: slide up + fade (25% - 55%)
-    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.25, 0.55, curve: Curves.easeOutCubic),
-          ),
-        );
-    _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.25, 0.55, curve: Curves.easeOut),
-      ),
-    );
-
-    // Tagline fade (45% - 65%)
-    _taglineFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.45, 0.65, curve: Curves.easeOut),
-      ),
-    );
-
-    // Feature icons row: slide up + fade (55% - 85%)
+    // Feature icons row: slide up + fade (40% - 75%)
     _featuresSlide =
-        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.55, 0.85, curve: Curves.easeOutCubic),
-          ),
-        );
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.4, 0.75, curve: Curves.easeOutCubic),
+      ),
+    );
     _featuresFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.55, 0.85, curve: Curves.easeOut),
+        curve: const Interval(0.4, 0.75, curve: Curves.easeOut),
       ),
     );
 
-    // Progress bar + loading text (70% - 100%)
+    // Progress bar + loading text (65% - 100%)
     _progressFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+        curve: const Interval(0.65, 1.0, curve: Curves.easeOut),
       ),
     );
 
     _controller.forward();
-    _navigateToLogin();
+    _navigateToNext();
   }
 
-  Future<void> _navigateToLogin() async {
-    await Future.delayed(const Duration(milliseconds: 3200));
+  Future<void> _navigateToNext() async {
+    // Give time for full animation sequence
+    await Future.delayed(const Duration(milliseconds: 2700));
 
+    if (!mounted) return;
+
+    try {
+      final rememberMe = await SecureStorage.getRememberMe();
+      if (rememberMe) {
+        final token = await SecureStorage.getToken();
+        final expiration = await SecureStorage.getTokenExpiration();
+        if (token != null &&
+            token.isNotEmpty &&
+            expiration != null &&
+            DateTime.now().toUtc().isBefore(expiration.toUtc())) {
+          final user = await SecureStorage.getUser();
+          if (user != null) {
+            _navigateWithFade(HomeView(user: user));
+            return;
+          }
+        }
+      }
+    } catch (_) {
+      // Fall through to login on any storage issue
+    }
+
+    _navigateWithFade(const LoginView());
+  }
+
+  void _navigateWithFade(Widget destination) {
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginView(),
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 500),
+        transitionDuration: const Duration(milliseconds: 450),
       ),
     );
   }
@@ -121,12 +124,20 @@ class _SplashViewState extends State<SplashView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0B0614),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF17092E), Color(0xFF2A0F4E), Color(0xFF3D1466)],
+            colors: [
+              Color(0xFF0B0614),
+              Color(0xFF240A42),
+              Color(0xFF3B0B63),
+            ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
         child: SafeArea(
@@ -137,71 +148,12 @@ class _SplashViewState extends State<SplashView>
                 children: [
                   const Spacer(flex: 3),
 
-                  // Logo
+                  // Brand App Logo with ambient purple neon glow
                   FadeTransition(
                     opacity: _logoFade,
                     child: ScaleTransition(
                       scale: _logoScale,
                       child: _buildLogo(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // App name
-                  SlideTransition(
-                    position: _titleSlide,
-                    child: FadeTransition(
-                      opacity: _titleFade,
-                      child: RichText(
-                        text: const TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Alien',
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'HR',
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFB565F0),
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Tagline
-                  FadeTransition(
-                    opacity: _taglineFade,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(width: 20, height: 1, color: Colors.white24),
-                        const SizedBox(width: 10),
-                        Text(
-                          'SMART HR. BETTER PEOPLE.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            letterSpacing: 2,
-                            color: Colors.white.withValues(alpha: 0.65),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(width: 20, height: 1, color: Colors.white24),
-                      ],
                     ),
                   ),
 
@@ -213,28 +165,28 @@ class _SplashViewState extends State<SplashView>
                     child: FadeTransition(
                       opacity: _featuresFade,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: const [
                             _FeatureIcon(
-                              icon: Icons.person_outline,
+                              icon: Icons.badge_outlined,
                               label: 'PEOPLE',
                             ),
                             _FeatureIcon(
-                              icon: Icons.event_available_outlined,
+                              icon: Icons.how_to_reg_outlined,
                               label: 'ATTENDANCE',
                             ),
                             _FeatureIcon(
-                              icon: Icons.description_outlined,
+                              icon: Icons.event_note_outlined,
                               label: 'LEAVE',
                             ),
                             _FeatureIcon(
-                              icon: Icons.access_time_rounded,
-                              label: 'OVERTIME',
+                              icon: Icons.payments_outlined,
+                              label: 'PAYROLL',
                             ),
                             _FeatureIcon(
-                              icon: Icons.location_on_outlined,
+                              icon: Icons.share_location_outlined,
                               label: 'GEOFENCE',
                             ),
                           ],
@@ -245,30 +197,33 @@ class _SplashViewState extends State<SplashView>
 
                   const Spacer(flex: 3),
 
-                  // Progress bar + loading text
+                  // Progress bar + loading label
                   FadeTransition(
                     opacity: _progressFade,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 60),
+                      padding: const EdgeInsets.symmetric(horizontal: 56),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             child: LinearProgressIndicator(
                               value: _controller.value,
                               minHeight: 4,
                               backgroundColor: Colors.white12,
                               valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFFB565F0),
+                                Color(0xFFA855F7),
                               ),
                             ),
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Loading your workspace...',
+                            'Loading AlienHR workspace...',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                              color: Colors.white.withValues(alpha: 0.65),
                             ),
                           ),
                         ],
@@ -276,7 +231,7 @@ class _SplashViewState extends State<SplashView>
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 36),
                 ],
               );
             },
@@ -286,39 +241,36 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
- Widget _buildLogo() {
-  return Container(
-    width: 140,
-    height: 140,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF9B4FE0),
-          Color(0xFF6B2FB3),
-        ],
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFFB565F0).withValues(alpha: 0.4),
-          blurRadius: 40,
-          spreadRadius: 4,
+  Widget _buildLogo() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Ambient soft purple radial glow
+        Container(
+          width: 170,
+          height: 170,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFA855F7).withValues(alpha: 0.32),
+                blurRadius: 55,
+                spreadRadius: 8,
+              ),
+            ],
+          ),
         ),
-      ],
-    ),
-    child: ClipOval(
-      child: Padding(
-        padding: const EdgeInsets.all(15),
-        child: Image.asset(
+
+        // Unclipped, high-resolution official logo
+        Image.asset(
           'lib/assets/images/alien_logo.png',
+          width: 260,
+          height: 220,
           fit: BoxFit.contain,
         ),
-      ),
-    ),
-  );
-}
+      ],
+    );
+  }
 }
 
 class _FeatureIcon extends StatelessWidget {
@@ -332,15 +284,26 @@ class _FeatureIcon extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.white70, size: 22),
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.07),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, color: const Color(0xFFE9D5FF), size: 20),
+        ),
         const SizedBox(height: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 9,
-            color: Colors.white60,
+          style: TextStyle(
+            fontSize: 9.5,
+            color: Colors.white.withValues(alpha: 0.7),
             letterSpacing: 0.5,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

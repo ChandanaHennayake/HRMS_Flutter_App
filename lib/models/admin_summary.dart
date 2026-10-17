@@ -4,6 +4,7 @@ class AdminSummary {
   final int onLeaveToday;
   final int absentToday;
   final int pendingLeaves;
+  final int pendingCorrections;
   final int lateEmployees;
   final int missingCheckOut;
   final double presentPercentage;
@@ -17,6 +18,7 @@ class AdminSummary {
     required this.onLeaveToday,
     required this.absentToday,
     required this.pendingLeaves,
+    this.pendingCorrections = 0,
     required this.lateEmployees,
     required this.missingCheckOut,
     required this.presentPercentage,
@@ -32,6 +34,7 @@ class AdminSummary {
       onLeaveToday: json['onLeaveToday'] is num ? (json['onLeaveToday'] as num).toInt() : 0,
       absentToday: json['absentToday'] is num ? (json['absentToday'] as num).toInt() : 0,
       pendingLeaves: json['pendingLeaves'] is num ? (json['pendingLeaves'] as num).toInt() : 0,
+      pendingCorrections: json['pendingCorrections'] is num ? (json['pendingCorrections'] as num).toInt() : 0,
       lateEmployees: json['lateEmployees'] is num ? (json['lateEmployees'] as num).toInt() : 0,
       missingCheckOut: json['missingCheckOut'] is num ? (json['missingCheckOut'] as num).toInt() : 0,
       presentPercentage: json['presentPercentage'] is num ? (json['presentPercentage'] as num).toDouble() : 0.0,
@@ -47,6 +50,7 @@ class AdminSummary {
     onLeaveToday: 0,
     absentToday: 0,
     pendingLeaves: 0,
+    pendingCorrections: 0,
     lateEmployees: 0,
     missingCheckOut: 0,
     presentPercentage: 0.0,

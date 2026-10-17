@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/network/api_client.dart';
 import 'core/network/connectivity_service.dart';
-import 'ui/auth/auth_gate.dart';
+import 'ui/splash/splash_view.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class AlienHrApp extends StatelessWidget {
           seedColor: const Color(0xFF7C2FCE),
         ),
       ),
-      home: const AuthGate(),
+      home: const SplashView(),
     );
   }
 }

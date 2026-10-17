@@ -19,9 +19,10 @@ class _LoginViewState extends State<LoginView> {
   final LoginViewModel viewModel = LoginViewModel();
 
   bool hidePassword = true;
-  bool rememberMe = false;
+  bool rememberMe = true;
 
   static const Color deepDark = Color(0xFF0B0614);
+  static const Color midPurple = Color(0xFF260A45);
   static const Color violet = Color(0xFF7C2FCE);
   static const Color brightViolet = Color(0xFFA855F7);
   static const Color textMuted = Color(0xFF8B87A0);
@@ -29,7 +30,6 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-
     viewModel.addListener(_onViewModelChanged);
   }
 
@@ -43,23 +43,34 @@ class _LoginViewState extends State<LoginView> {
   void dispose() {
     viewModel.removeListener(_onViewModelChanged);
     viewModel.dispose();
-
     idController.dispose();
     passwordController.dispose();
-
     super.dispose();
   }
 
   // ============================================================
-  // LOGIN
+  // LOGIN ACTION
   // ============================================================
 
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
 
+    final username = idController.text.trim();
+    final password = passwordController.text;
+
+    if (username.isEmpty) {
+      _showErrorSnackBar('Please enter your Employee ID or username.');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showErrorSnackBar('Please enter your password.');
+      return;
+    }
+
     final user = await viewModel.login(
-      username: idController.text,
-      password: passwordController.text,
+      username: username,
+      password: password,
       rememberMe: rememberMe,
     );
 
@@ -69,22 +80,35 @@ class _LoginViewState extends State<LoginView> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => HomeView(
-            user: user,
-          ),
+          builder: (_) => HomeView(user: user),
         ),
       );
-
       return;
     }
 
+    _showErrorSnackBar(viewModel.errorMessage ?? 'Login failed. Please check credentials.');
+  }
+
+  void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          viewModel.errorMessage ?? 'Login failed.',
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
         ),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: const Color(0xFFDC2626),
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -99,75 +123,64 @@ class _LoginViewState extends State<LoginView> {
       backgroundColor: deepDark,
       body: Container(
         width: double.infinity,
-        constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height,
-        ),
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
               deepDark,
+              midPurple,
               Color(0xFF3B0B63),
-              violet,
             ],
-            stops: [
-              0.0,
-              0.55,
-              1.0,
-            ],
+            stops: [0.0, 0.45, 1.0],
           ),
         ),
         child: Stack(
           children: [
-            // ====================================================
-            // BACKGROUND DECORATION
-            // ====================================================
-
+            // Ambient glowing background orbs
             Positioned(
-              top: 60,
+              top: -40,
+              right: -30,
+              child: _ringCircle(140, Colors.white.withValues(alpha: 0.05)),
+            ),
+            Positioned(
+              top: 180,
               left: -50,
-              child: _ringCircle(
-                120,
-                Colors.white.withValues(
-                  alpha: 0.06,
-                ),
+              child: _ringCircle(100, brightViolet.withValues(alpha: 0.08)),
+            ),
+
+            // Subtle particle dots in background
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _GlobeDotsPainter(),
               ),
             ),
 
-            Positioned(
-              top: 420,
-              right: -40,
-              child: _ringCircle(
-                90,
-                Colors.white.withValues(
-                  alpha: 0.05,
-                ),
-              ),
-            ),
-
-            // ====================================================
-            // CONTENT
-            // ====================================================
-
+            // Scrollable Content
             SafeArea(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 10),
+              child: Center(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Official Logo Header
+                      _buildLogoHeader(),
 
-                    _buildLogoHeader(),
+                      const SizedBox(height: 12),
 
-                    const SizedBox(height: 10),
+                      // Login Card
+                      _buildLoginCard(),
 
-                    _buildLoginCard(),
+                      const SizedBox(height: 20),
 
-                    const SizedBox(height: 30),
-
-                    _buildGlobeBanner(),
-                  ],
+                      // IT Support & System Version footer
+                      _buildFooter(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -178,36 +191,28 @@ class _LoginViewState extends State<LoginView> {
   }
 
   // ============================================================
-  // LOGO
+  // LOGO HEADER
   // ============================================================
 
   Widget _buildLogoHeader() {
     return Center(
-      child: SizedBox(
-        width: 270,
-        height: 220,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 220, maxHeight: 130),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Image.asset(
           'lib/assets/images/alien_logo.png',
           fit: BoxFit.contain,
-          errorBuilder: (
-            context,
-            error,
-            stackTrace,
-          ) {
+          errorBuilder: (context, error, stackTrace) {
             return const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.hub_outlined,
-                  color: Colors.white,
-                  size: 60,
-                ),
-                SizedBox(height: 10),
+                Icon(Icons.fingerprint, color: Colors.white, size: 48),
+                SizedBox(height: 6),
                 Text(
                   'AlienHR',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 25,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -220,129 +225,84 @@ class _LoginViewState extends State<LoginView> {
   }
 
   // ============================================================
-  // DECORATIVE RING
-  // ============================================================
-
-  Widget _ringCircle(
-    double size,
-    Color color,
-  ) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: color,
-          width: 1,
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
   // LOGIN CARD
   // ============================================================
 
   Widget _buildLoginCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 20,
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        28,
-        24,
-        24,
-      ),
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 440),
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.35,
-            ),
-            blurRadius: 30,
-            offset: const Offset(
-              0,
-              12,
-            ),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 32,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ====================================================
-          // TITLE
-          // ====================================================
-
+          // Header
           const Text(
             'Welcome Back',
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 23,
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E1B2E),
+              letterSpacing: -0.2,
             ),
           ),
-
           const SizedBox(height: 4),
-
           const Text(
-            'Login to your AlienHR account',
+            'Sign in to your AlienHR enterprise workspace',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13.5,
               color: textMuted,
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // ====================================================
-          // USERNAME
-          // ====================================================
-
+          // Username Field
           const Text(
             'Employee ID / Username',
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 13.5,
+              fontSize: 13,
               color: Color(0xFF2D293D),
             ),
           ),
-
-          const SizedBox(height: 8),
-
+          const SizedBox(height: 7),
           TextField(
             controller: idController,
             enabled: !viewModel.isLoading,
             textInputAction: TextInputAction.next,
             autocorrect: false,
             enableSuggestions: false,
+            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1B2E)),
             decoration: _fieldDecoration(
-              hint: 'Enter your employee ID or username',
-              icon: Icons.person_outline,
+              hint: 'e.g. admin or EMP001',
+              icon: Icons.person_outline_rounded,
             ),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
-          // ====================================================
-          // PASSWORD
-          // ====================================================
-
+          // Password Field
           const Text(
             'Password',
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              fontSize: 13.5,
+              fontSize: 13,
               color: Color(0xFF2D293D),
             ),
           ),
-
-          const SizedBox(height: 8),
-
+          const SizedBox(height: 7),
           TextField(
             controller: passwordController,
             enabled: !viewModel.isLoading,
@@ -350,6 +310,7 @@ class _LoginViewState extends State<LoginView> {
             textInputAction: TextInputAction.done,
             enableSuggestions: false,
             autocorrect: false,
+            style: const TextStyle(fontSize: 14.5, color: Color(0xFF1E1B2E)),
             onSubmitted: (_) {
               if (!viewModel.isLoading) {
                 _login();
@@ -357,13 +318,14 @@ class _LoginViewState extends State<LoginView> {
             },
             decoration: _fieldDecoration(
               hint: 'Enter your password',
-              icon: Icons.lock_outline,
+              icon: Icons.lock_outline_rounded,
               suffix: IconButton(
                 icon: Icon(
                   hidePassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: Colors.grey[600],
+                  color: const Color(0xFF7C2FCE),
+                  size: 20,
                 ),
                 onPressed: viewModel.isLoading
                     ? null
@@ -376,12 +338,9 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // ====================================================
-          // REMEMBER ME
-          // ====================================================
-
+          // Remember Me Row
           InkWell(
             onTap: viewModel.isLoading
                 ? null
@@ -392,9 +351,7 @@ class _LoginViewState extends State<LoginView> {
                   },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -405,9 +362,7 @@ class _LoginViewState extends State<LoginView> {
                       value: rememberMe,
                       activeColor: violet,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          4,
-                        ),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       onChanged: viewModel.isLoading
                           ? null
@@ -418,13 +373,12 @@ class _LoginViewState extends State<LoginView> {
                             },
                     ),
                   ),
-
-                  const SizedBox(width: 10),
-
+                  const SizedBox(width: 9),
                   const Text(
                     'Remember me',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
                       color: Color(0xFF4B4560),
                     ),
                   ),
@@ -433,68 +387,48 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // ====================================================
-          // LOGIN BUTTON
-          // ====================================================
-
+          // Login Button
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 50,
             child: ElevatedButton(
-              onPressed: viewModel.isLoading
-                  ? null
-                  : _login,
+              onPressed: viewModel.isLoading ? null : _login,
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.zero,
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                disabledBackgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    14,
-                  ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                elevation: 4,
+                shadowColor: violet.withValues(alpha: 0.4),
               ),
               child: Ink(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: viewModel.isLoading
-                        ? [
-                            const Color(0xFF6B4A88),
-                            const Color(0xFF8B5FA8),
-                          ]
-                        : [
-                            const Color(0xFF4C1D95),
-                            brightViolet,
-                          ],
+                  gradient: const LinearGradient(
+                    colors: [brightViolet, violet],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(
-                    14,
-                  ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Container(
                   alignment: Alignment.center,
                   child: viewModel.isLoading
                       ? const Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(
-                              width: 21,
-                              height: 21,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
+                                strokeWidth: 2.2,
                                 color: Colors.white,
                               ),
                             ),
                             SizedBox(width: 12),
                             Text(
-                              'Signing in...',
+                              'Signing In...',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -504,21 +438,21 @@ class _LoginViewState extends State<LoginView> {
                           ],
                         )
                       : const Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Login',
+                              'Sign In',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15.5,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
+                                letterSpacing: 0.3,
                               ),
                             ),
                             SizedBox(width: 8),
                             Icon(
-                              Icons.arrow_forward,
-                              size: 20,
+                              Icons.arrow_forward_rounded,
+                              size: 19,
                               color: Colors.white,
                             ),
                           ],
@@ -527,43 +461,54 @@ class _LoginViewState extends State<LoginView> {
               ),
             ),
           ),
-
-          const SizedBox(height: 22),
-
-          // ====================================================
-          // IT SUPPORT
-          // ====================================================
-
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Need help? Contact ',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                  ),
-                ),
-                const Text(
-                  'IT Support',
-                  style: TextStyle(
-                    color: violet,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.headset_mic_outlined,
-                  size: 18,
-                  color: violet,
-                ),
-              ],
-            ),
-          ),
         ],
       ),
+    );
+  }
+
+  // ============================================================
+  // FOOTER (SUPPORT & BRAND)
+  // ============================================================
+
+  Widget _buildFooter() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Need help? Contact ',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 13,
+              ),
+            ),
+            const Text(
+              'IT Support',
+              style: TextStyle(
+                color: Color(0xFFC084FC),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.headset_mic_outlined,
+              size: 16,
+              color: Color(0xFFC084FC),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'AlienHR Enterprise v1.0.0',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.35),
+            fontSize: 11,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ],
     );
   }
 
@@ -579,40 +524,42 @@ class _LoginViewState extends State<LoginView> {
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
-        color: Colors.grey[400],
-        fontSize: 14,
+        color: Colors.grey.shade400,
+        fontSize: 13.5,
       ),
       prefixIcon: Icon(
         icon,
         color: violet,
+        size: 20,
       ),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFFCFBFD),
+      fillColor: const Color(0xFFF9F7FB),
       contentPadding: const EdgeInsets.symmetric(
-        vertical: 16,
+        horizontal: 16,
+        vertical: 14,
       ),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(
-          color: Color(0xFFE0D3EA),
+          color: Color(0xFFE5DBEC),
         ),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(
-          color: Color(0xFFE0D3EA),
+          color: Color(0xFFE5DBEC),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(
           color: violet,
-          width: 1.5,
+          width: 1.8,
         ),
       ),
       disabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(
           color: Colors.grey.shade200,
         ),
@@ -620,134 +567,44 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  // ============================================================
-  // GLOBE / NETWORK BANNER
-  // ============================================================
-
-  Widget _buildGlobeBanner() {
-    return SizedBox(
-      height: 170,
-      width: double.infinity,
-      child: ClipPath(
-        clipper: _GlobeClipper(),
-        child: Container(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0, -1.4),
-              radius: 1.4,
-              colors: [
-                Color(0xFF6D28D9),
-                Color(0xFF1A0B2E),
-                Color(0xFF0B0614),
-              ],
-              stops: [
-                0.0,
-                0.55,
-                1.0,
-              ],
-            ),
-          ),
-          child: CustomPaint(
-            size: Size.infinite,
-            painter: _GlobeDotsPainter(),
-          ),
-        ),
+  Widget _ringCircle(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 1),
       ),
     );
   }
 }
 
 // ================================================================
-// GLOBE CLIPPER
-// ================================================================
-
-class _GlobeClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-
-    path.moveTo(
-      0,
-      size.height,
-    );
-
-    path.lineTo(
-      0,
-      size.height * 0.55,
-    );
-
-    path.quadraticBezierTo(
-      size.width / 2,
-      -size.height * 0.55,
-      size.width,
-      size.height * 0.55,
-    );
-
-    path.lineTo(
-      size.width,
-      size.height,
-    );
-
-    path.close();
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(
-    covariant CustomClipper<Path> oldClipper,
-  ) {
-    return false;
-  }
-}
-
-// ================================================================
-// GLOBE DOTS PAINTER
+// BACKGROUND DOTS PAINTER
 // ================================================================
 
 class _GlobeDotsPainter extends CustomPainter {
   @override
-  void paint(
-    Canvas canvas,
-    Size size,
-  ) {
+  void paint(Canvas canvas, Size size) {
     final random = Random(42);
 
-    final dotPaint = Paint()
-      ..color = Colors.white.withValues(
-        alpha: 0.5,
-      );
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.22);
+    final glowPaint = Paint()..color = const Color(0xFFA855F7).withValues(alpha: 0.45);
 
-    final glowPaint = Paint()
-      ..color = const Color(
-        0xFFA855F7,
-      ).withValues(
-        alpha: 0.8,
-      );
-
-    for (int i = 0; i < 45; i++) {
+    for (int i = 0; i < 35; i++) {
       final dx = random.nextDouble() * size.width;
+      final dy = random.nextDouble() * size.height;
 
-      final dy =
-          size.height * 0.15 +
-          random.nextDouble() * size.height * 0.7;
-
-      final isGlow = i % 6 == 0;
+      final isGlow = i % 5 == 0;
 
       canvas.drawCircle(
         Offset(dx, dy),
-        isGlow ? 2.2 : 1.2,
-        isGlow
-            ? glowPaint
-            : dotPaint,
+        isGlow ? 1.8 : 1.0,
+        isGlow ? glowPaint : dotPaint,
       );
     }
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

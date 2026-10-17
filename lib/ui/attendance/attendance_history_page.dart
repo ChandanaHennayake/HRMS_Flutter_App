@@ -166,10 +166,20 @@ class _AttendanceHistoryPageState
   }
 
   Future<void> _openCorrectionDialog() async {
+    int targetEmployeeId = employeeId;
+    if (targetEmployeeId <= 0) {
+      final storedId = await SecureStorage.getEmployeeId();
+      if (storedId != null && storedId > 0) {
+        targetEmployeeId = storedId;
+      }
+    }
+
+    if (!mounted) return;
+
     final result = await showDialog<AttendanceCorrection?>(
       context: context,
       builder: (_) => AttendanceCorrectionDialog(
-        employeeId: employeeId,
+        employeeId: targetEmployeeId,
       ),
     );
 

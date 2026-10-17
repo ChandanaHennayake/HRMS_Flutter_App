@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../models/attendance_correction.dart';
+import '../../models/branch.dart';
 import '../../models/user.dart';
 import '../../services/attendance_correction_service.dart';
+import '../../services/branch_service.dart';
 
 class ManagerAttendanceCorrectionsPage extends StatefulWidget {
   final User user;
@@ -31,14 +33,41 @@ class _ManagerAttendanceCorrectionsPageState
   static const Color crimson = Color(0xFFEF4444);
 
   final AttendanceCorrectionService _service = AttendanceCorrectionService();
+  final BranchService _branchService = BranchService();
+
   List<AttendanceCorrection> _corrections = [];
+  List<Branch> _branches = [];
+  int? _selectedBranchId;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    // Admin (roleId == 1) defaults to null (All Branches) unless explicitly passed
+    if (widget.user.roleId == 1) {
+      _selectedBranchId = widget.branchId;
+    } else {
+      _selectedBranchId = widget.branchId ?? (widget.user.branchId > 0 ? widget.user.branchId : null);
+    }
+    _loadBranches();
     _loadCorrections();
+  }
+
+  Future<void> _loadBranches() async {
+    try {
+      List<Branch> list = [];
+      if (widget.user.roleId == 1) {
+        list = await _branchService.getBranches();
+      } else {
+        list = await _branchService.getUserBranches(widget.user.userId);
+      }
+      if (mounted) {
+        setState(() {
+          _branches = list;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadCorrections() async {
@@ -49,7 +78,7 @@ class _ManagerAttendanceCorrectionsPageState
 
     try {
       final list = await _service.getPendingCorrections(
-        branchId: widget.branchId ?? widget.user.branchId,
+        branchId: _selectedBranchId,
       );
       if (!mounted) return;
       setState(() {
@@ -212,11 +241,9 @@ class _ManagerAttendanceCorrectionsPageState
     return Scaffold(
       backgroundColor: background,
       appBar: AppBar(
-        title: Text(
-          widget.branchName != null
-              ? 'Corrections - ${widget.branchName}'
-              : 'Attendance Corrections',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: const Text(
+          'Attendance Corrections',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         foregroundColor: textDark,
@@ -228,7 +255,65 @@ class _ManagerAttendanceCorrectionsPageState
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          if (_branches.isNotEmpty) _buildBranchSelector(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBranchSelector() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: const Text('All Branches'),
+                selected: _selectedBranchId == null,
+                selectedColor: violet.withValues(alpha: 0.15),
+                labelStyle: TextStyle(
+                  color: _selectedBranchId == null ? violet : textDark,
+                  fontWeight: _selectedBranchId == null ? FontWeight.bold : FontWeight.normal,
+                ),
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() => _selectedBranchId = null);
+                    _loadCorrections();
+                  }
+                },
+              ),
+            ),
+            ..._branches.map((b) {
+              final isSelected = _selectedBranchId == b.branchId;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(b.branchName),
+                  selected: isSelected,
+                  selectedColor: violet.withValues(alpha: 0.15),
+                  labelStyle: TextStyle(
+                    color: isSelected ? violet : textDark,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedBranchId = b.branchId);
+                      _loadCorrections();
+                    }
+                  },
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 

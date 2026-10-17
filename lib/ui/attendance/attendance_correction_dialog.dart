@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../../core/storage/secure_storage.dart';
 import '../../services/attendance_correction_service.dart';
 
 class AttendanceCorrectionDialog extends StatefulWidget {
@@ -136,11 +136,25 @@ class _AttendanceCorrectionDialogState
     });
 
     try {
+      int empId = widget.employeeId;
+      if (empId <= 0) {
+        final stored = await SecureStorage.getEmployeeId();
+        if (stored != null && stored > 0) empId = stored;
+      }
+
+      if (empId <= 0) {
+        setState(() {
+          _errorMessage = 'Employee ID not found. Please log in again.';
+          _isSubmitting = false;
+        });
+        return;
+      }
+
       final dateStr =
           '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
       final result = await _service.submitCorrection(
-        employeeId: widget.employeeId,
+        employeeId: empId,
         attendanceDate: dateStr,
         requestedCheckInTime: checkIn,
         requestedCheckOutTime: checkOut,

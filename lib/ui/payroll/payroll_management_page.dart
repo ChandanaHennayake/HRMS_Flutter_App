@@ -172,7 +172,7 @@ class _PayrollManagementPageState extends State<PayrollManagementPage> {
                 try {
                   await _payrollService.processPayroll({
                     'companyId': widget.companyId,
-                    'branchId': widget.branchId,
+                    'branchId': (widget.branchId != null && widget.branchId! > 0) ? widget.branchId : null,
                     'year': selectedYear,
                     'month': selectedMonth,
                     'workingDaysDivisor': divisor,

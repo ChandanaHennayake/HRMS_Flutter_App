@@ -61,6 +61,7 @@ class ManagerSummary {
   final int onLeaveToday;
   final int absentToday;
   final int pendingLeaves;
+  final int pendingCorrections;
   final List<EmployeeOnLeave> todayLeave;
   final List<WeeklyAttendanceDay> weeklyAttendance;
 
@@ -72,6 +73,7 @@ class ManagerSummary {
     required this.onLeaveToday,
     required this.absentToday,
     required this.pendingLeaves,
+    this.pendingCorrections = 0,
     required this.todayLeave,
     required this.weeklyAttendance,
   });
@@ -101,6 +103,7 @@ class ManagerSummary {
       onLeaveToday: json['onLeaveToday'] is num ? (json['onLeaveToday'] as num).toInt() : 0,
       absentToday: json['absentToday'] is num ? (json['absentToday'] as num).toInt() : 0,
       pendingLeaves: json['pendingLeaves'] is num ? (json['pendingLeaves'] as num).toInt() : 0,
+      pendingCorrections: json['pendingCorrections'] is num ? (json['pendingCorrections'] as num).toInt() : 0,
       todayLeave: leaveList,
       weeklyAttendance: weeklyList,
     );
@@ -114,6 +117,7 @@ class ManagerSummary {
     onLeaveToday: 0,
     absentToday: 0,
     pendingLeaves: 0,
+    pendingCorrections: 0,
     todayLeave: [],
     weeklyAttendance: [],
   );

@@ -727,94 +727,166 @@ class _ManagerDashboardState
   }
 
   // ============================================================
-  // PENDING LEAVE APPROVAL
+  // PENDING APPROVALS (LEAVE & ATTENDANCE CORRECTIONS)
   // ============================================================
 
   Widget _buildPendingApproval() {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: _openLeaveApprovals,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius:
-                BorderRadius.circular(18),
-            border: Border.all(
-              color: const Color(0xFFEADCF5),
+        border: Border.all(
+          color: const Color(0xFFEADCF5),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Leave Approvals
+          InkWell(
+            onTap: _openLeaveApprovals,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.pending_actions_outlined,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pending Leave Approvals',
+                          style: TextStyle(
+                            color: textDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Requires your review',
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF1E8FA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      _summary.pendingLeaves.toString(),
+                      style: const TextStyle(
+                        color: violet,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: textMuted,
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E6),
-                  borderRadius:
-                      BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.pending_actions_outlined,
-                  color: Colors.orange,
-                ),
-              ),
 
-              const SizedBox(width: 13),
+          const Divider(height: 1, indent: 16, endIndent: 16),
 
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pending Leave Approvals',
-                      style: TextStyle(
-                        color: textDark,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+          // Attendance Corrections
+          InkWell(
+            onTap: _openAttendanceCorrections,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: violet.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    SizedBox(height: 3),
-                    Text(
-                      'Requires your attention',
-                      style: TextStyle(
-                        color: textMuted,
-                        fontSize: 11,
-                      ),
+                    child: const Icon(
+                      Icons.edit_calendar_outlined,
+                      color: violet,
                     ),
-                  ],
-                ),
-              ),
-
-              Container(
-                width: 35,
-                height: 35,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1E8FA),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  _summary.pendingLeaves.toString(),
-                  style: const TextStyle(
-                    color: violet,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Attendance Corrections',
+                          style: TextStyle(
+                            color: textDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Time punch adjustment requests',
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _summary.pendingCorrections > 0
+                          ? Colors.orange.withValues(alpha: 0.15)
+                          : const Color(0xFFF1E8FA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      _summary.pendingCorrections.toString(),
+                      style: TextStyle(
+                        color: _summary.pendingCorrections > 0 ? Colors.orange : violet,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: textMuted,
+                  ),
+                ],
               ),
-
-              const SizedBox(width: 5),
-
-              const Icon(
-                Icons.chevron_right,
-                color: textMuted,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
