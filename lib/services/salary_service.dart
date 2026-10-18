@@ -8,6 +8,8 @@ class SalaryService {
 
   /// Get employee salary profile and live calculation
   Future<EmployeeSalary?> getEmployeeSalary(int employeeId) async {
+    if (employeeId <= 0) return null;
+
     final response = await _apiClient.get(
       ApiConstants.employeeSalary(employeeId),
     );

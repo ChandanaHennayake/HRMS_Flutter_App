@@ -44,10 +44,10 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
 
   bool _autoCalculateNoPay = true;
   bool _autoCalculateOt = true;
-  bool _deductEpf = true;
-  final double _employeeEpfRate = 8.0;
-  final double _employerEpfRate = 12.0;
-  final double _employerEtfRate = 3.0;
+  final bool _deductEpf = false;
+  final double _employeeEpfRate = 0.0;
+  final double _employerEpfRate = 0.0;
+  final double _employerEtfRate = 0.0;
   String _paymentStatus = 'Unpaid';
 
   List<PayrollManualItem> _allowances = [];
@@ -221,20 +221,10 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
   double get _totalAllowances => _allowances.fold(0.0, (sum, a) => sum + a.amount);
   double get _grossEarnings => _baseSalary + _totalAllowances + _overtimePay;
 
-  double get _epfApplicableAllowances =>
-      _allowances.where((a) => a.isEpfApplicable).fold(0.0, (sum, a) => sum + a.amount);
-
-  double get _grossEpfSalary {
-    final epfBase = _baseSalary + _epfApplicableAllowances - _noPayDeduction;
-    return epfBase > 0 ? epfBase : 0.0;
-  }
-
-  double get _employeeEpf => _deductEpf ? (_grossEpfSalary * (_employeeEpfRate / 100.0)) : 0.0;
-  double get _employerEpf => _deductEpf ? (_grossEpfSalary * (_employerEpfRate / 100.0)) : 0.0;
-  double get _employerEtf => _deductEpf ? (_grossEpfSalary * (_employerEtfRate / 100.0)) : 0.0;
+  double get _employeeEpf => 0.0;
 
   double get _totalCustomDeductions => _deductions.fold(0.0, (sum, d) => sum + d.amount);
-  double get _totalDeductions => _noPayDeduction + _employeeEpf + _totalCustomDeductions;
+  double get _totalDeductions => _noPayDeduction + _totalCustomDeductions;
   double get _netSalary {
     final net = _grossEarnings - _totalDeductions;
     return net > 0 ? net : 0.0;
@@ -1231,74 +1221,8 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
     );
   }
 
-  // Card 6: Statutory EPF / ETF
-  Widget _buildEpfSettingsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Statutory Contributions (EPF & ETF)',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                Switch(
-                  value: _deductEpf,
-                  onChanged: (val) => setState(() => _deductEpf = val),
-                ),
-              ],
-            ),
-            if (_deductEpf) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Gross EPF Salary Base: Rs. ${_grossEpfSalary.toStringAsFixed(2)} (Basic + EPF Allowances - NoPay)',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Employee EPF (8%):', style: TextStyle(color: Colors.grey.shade800)),
-                  Text(
-                    'Rs. ${_employeeEpf.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Employer EPF (12%):', style: TextStyle(color: Colors.grey.shade800)),
-                  Text(
-                    'Rs. ${_employerEpf.toStringAsFixed(2)}',
-                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.indigo.shade800),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Employer ETF (3%):', style: TextStyle(color: Colors.grey.shade800)),
-                  Text(
-                    'Rs. ${_employerEtf.toStringAsFixed(2)}',
-                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.indigo.shade800),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  // Card 6: Statutory EPF / ETF (Removed as per requirements)
+  Widget _buildEpfSettingsCard() => const SizedBox.shrink();
 
   // Card 7: Dynamic Real-time Salary Summary
   Widget _buildSummaryCard() {

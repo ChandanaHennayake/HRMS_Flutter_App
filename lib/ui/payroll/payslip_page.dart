@@ -190,8 +190,10 @@ class _PayslipPageState extends State<PayslipPage> {
             const SizedBox(height: 16),
 
             // Statutory EPF / ETF Employer Contributions Card
-            _buildStatutoryEmployerCard(slip),
-            const SizedBox(height: 16),
+            if (slip.employerEpf > 0 || slip.employerEtf > 0) ...[
+              _buildStatutoryEmployerCard(slip),
+              const SizedBox(height: 16),
+            ],
 
             // Corporate Footer Note
             _buildFooterNote(),
@@ -465,7 +467,8 @@ class _PayslipPageState extends State<PayslipPage> {
           const SizedBox(height: 12),
           if (slip.noPayDeduction > 0)
             _itemRow('No-Pay (${slip.noPayDays.toStringAsFixed(1)} days)', slip.noPayDeduction),
-          _itemRow('Employee EPF (8%)', slip.employeeEpf),
+          if (slip.employeeEpf > 0)
+            _itemRow('Employee EPF (8%)', slip.employeeEpf),
           if (slip.apitTax > 0)
             _itemRow('APIT (PAYE Tax)', slip.apitTax),
           if (slip.otherDeductions > 0)
@@ -535,7 +538,7 @@ class _PayslipPageState extends State<PayslipPage> {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'This is a computer-generated payslip produced by AlienHR. All calculations adhere to statutory Sri Lankan labor regulations (EPF/ETF Act No. 15 of 1958 & Inland Revenue Act).',
+              'This is a computer-generated payslip produced by AlienHR. Please contact the HR department for any inquiries regarding salary disbursements.',
               style: TextStyle(color: slateMuted, fontSize: 11, height: 1.4),
             ),
           ),

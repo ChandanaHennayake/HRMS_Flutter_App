@@ -51,14 +51,24 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      final profileFuture = _userService.getUserProfile(widget.user.userId);
-      final salaryFuture = _salaryService.getEmployeeSalary(widget.user.employeeId);
+      final profile = await _userService.getUserProfile(widget.user.userId);
+      EmployeeSalary? salary;
+      final empId = (profile.employeeId != null && profile.employeeId! > 0)
+          ? profile.employeeId!
+          : widget.user.employeeId;
 
-      final results = await Future.wait([profileFuture, salaryFuture]);
+      if (empId > 0) {
+        try {
+          salary = await _salaryService.getEmployeeSalary(empId);
+        } catch (_) {
+          // Salary is optional - don't crash profile if salary is unconfigured
+        }
+      }
+
       if (!mounted) return;
       setState(() {
-        _profile = results[0] as UserProfile;
-        _salary = results[1] as EmployeeSalary?;
+        _profile = profile;
+        _salary = salary;
         _isLoading = false;
       });
     } catch (e) {

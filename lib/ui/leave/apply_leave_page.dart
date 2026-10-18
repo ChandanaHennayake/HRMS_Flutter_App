@@ -183,6 +183,14 @@ class _ApplyLeavePageState extends State<ApplyLeavePage> {
       return;
     }
 
+    if (_totalDays > 4) {
+      _showError(
+        'Monthly leave policy limit exceeded: Any employee can take a maximum of 4 leaves per month. '
+        'Requested: $_totalDays day(s).',
+      );
+      return;
+    }
+
     // Validate quota balance
     final balance = _balances
         .where((b) => b.leaveTypeId == _selectedLeaveType!.id)
