@@ -300,9 +300,9 @@ class PayslipItem {
       name: json['name']?.toString() ?? '',
       code: json['code']?.toString() ?? '',
       itemType: (json['itemType'] as num?)?.toInt() ?? 1,
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
-      isEpfApplicable: json['isEpfApplicable'] as bool? ?? false,
-      isTaxable: json['isTaxable'] as bool? ?? false,
+      amount: (json['amount'] as num?)?.toDouble() ?? (json['Amount'] as num?)?.toDouble() ?? (double.tryParse((json['amount'] ?? json['Amount'])?.toString() ?? '') ?? 0.0),
+      isEpfApplicable: (json['isEpfApplicable'] ?? json['IsEpfApplicable']) as bool? ?? false,
+      isTaxable: (json['isTaxable'] ?? json['IsTaxable']) as bool? ?? false,
     );
   }
 }
@@ -320,9 +320,9 @@ class PayrollManualItem {
 
   factory PayrollManualItem.fromJson(Map<String, dynamic> json) {
     return PayrollManualItem(
-      name: json['name']?.toString() ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
-      isEpfApplicable: json['isEpfApplicable'] as bool? ?? false,
+      name: json['name']?.toString() ?? json['Name']?.toString() ?? '',
+      amount: (json['amount'] as num?)?.toDouble() ?? (json['Amount'] as num?)?.toDouble() ?? (double.tryParse((json['amount'] ?? json['Amount'])?.toString() ?? '') ?? 0.0),
+      isEpfApplicable: (json['isEpfApplicable'] ?? json['IsEpfApplicable']) as bool? ?? false,
     );
   }
 
