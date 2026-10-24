@@ -501,7 +501,7 @@ class _LoginViewState extends State<LoginView> {
         ),
         const SizedBox(height: 8),
         Text(
-          'AlienHR Enterprise v1.0.1',
+          'AlienHR Enterprise v1.0.3',
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.35),
             fontSize: 11,
