@@ -185,6 +185,8 @@ class ApiClient {
       }
     }
 
+    headers['X-App-Version'] = ApiConstants.appVersion;
+
     return headers;
   }
 }

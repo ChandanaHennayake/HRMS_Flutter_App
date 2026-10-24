@@ -1,7 +1,9 @@
 class ApiConstants {
   static const String baseUrl = 'https://hrms-api-u0mt.onrender.com';
 
-  
+  // Application Version Configuration
+  static const String appVersion = '1.0.3';
+  static const String appVersionCheck = '/api/AppVersion/check';
 
   static const String login = '/api/Authentication/login';
 

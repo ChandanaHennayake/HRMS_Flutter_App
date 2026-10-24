@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../core/storage/secure_storage.dart';
+import '../../models/app_version_info.dart';
+import '../../services/app_version_service.dart';
 import '../auth/login_view.dart';
 import '../home/home_view.dart';
+import '../update/app_update_required_view.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -72,10 +75,22 @@ class _SplashViewState extends State<SplashView>
   }
 
   Future<void> _navigateToNext() async {
+    // Check version concurrently while splash animation is running
+    AppVersionInfo? versionInfo;
+    try {
+      versionInfo = await AppVersionService.checkVersion();
+    } catch (_) {}
+
     // Give time for full animation sequence
-    await Future.delayed(const Duration(milliseconds: 2700));
+    await Future.delayed(const Duration(milliseconds: 2500));
 
     if (!mounted) return;
+
+    // If an update is required by the database, block app entry completely!
+    if (versionInfo != null && versionInfo.isUpdateRequired) {
+      _navigateWithFade(AppUpdateRequiredView(versionInfo: versionInfo));
+      return;
+    }
 
     try {
       final rememberMe = await SecureStorage.getRememberMe();
