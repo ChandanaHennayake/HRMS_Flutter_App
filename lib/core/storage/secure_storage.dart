@@ -67,6 +67,9 @@ class SecureStorage {
   }
 
   // =========================
+  static const String _branchNameKey = 'branch_name';
+
+  // =========================
   // USER
   // =========================
 
@@ -80,6 +83,7 @@ class SecureStorage {
     required String role,
     required int companyId,
     required int branchId,
+    String? branchName,
     DateTime? expiration,
   }) async {
     await _storage.write(
@@ -127,6 +131,13 @@ class SecureStorage {
       value: branchId.toString(),
     );
 
+    if (branchName != null) {
+      await _storage.write(
+        key: _branchNameKey,
+        value: branchName,
+      );
+    }
+
     if (expiration != null) {
       await _storage.write(
         key: _expirationKey,
@@ -167,6 +178,9 @@ class SecureStorage {
     final branchId =
         await _storage.read(key: _branchIdKey);
 
+    final branchName =
+        await _storage.read(key: _branchNameKey);
+
     if (userId == null ||
         employeeId == null ||
         username == null ||
@@ -187,6 +201,7 @@ class SecureStorage {
       role: role,
       companyId: int.tryParse(companyId) ?? 0,
       branchId: int.tryParse(branchId) ?? 0,
+      branchName: branchName,
     );
   }
 

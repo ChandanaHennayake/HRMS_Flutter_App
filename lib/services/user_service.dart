@@ -180,6 +180,42 @@ class UserService {
   }
 
   // ============================================================
+  // ADMIN RESET PASSWORD (ADMIN)
+  // POST: /api/User/admin/reset-password
+  // ============================================================
+
+  Future<void> adminResetPassword({
+    required int userId,
+    required String newPassword,
+  }) async {
+    final response = await _apiClient.post(
+      '/api/User/admin/reset-password',
+      body: {
+        'userId': userId,
+        'newPassword': newPassword,
+      },
+      requiresAuth: true,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return;
+    }
+
+    try {
+      final decoded = jsonDecode(response.body);
+      final message = decoded is Map && decoded['message'] != null
+          ? decoded['message']
+          : 'Failed to reset user password (${response.statusCode})';
+      throw Exception(message);
+    } catch (e) {
+      if (e is Exception && !e.toString().contains('FormatException')) {
+        rethrow;
+      }
+      throw Exception('Failed to reset user password (${response.statusCode})');
+    }
+  }
+
+  // ============================================================
   // DELETE USER (ADMIN)
   // DELETE: /api/User/{id}
   // ============================================================

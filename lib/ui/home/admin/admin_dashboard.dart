@@ -1090,9 +1090,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const PayrollManagementPage(),
+                        builder: (_) => PayrollManagementPage(
+                          companyId: widget.user.companyId,
+                        ),
                       ),
                     );
+                    if (!mounted) return;
+                    _loadSummary();
                     return;
                   }
 
@@ -1107,6 +1111,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         builder: (_) => const IndividualPayrollPage(),
                       ),
                     );
+                    if (!mounted) return;
+                    _loadSummary();
                     return;
                   }
 
@@ -1160,6 +1166,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         ),
                       ),
                     );
+                    if (!mounted) return;
+                    _loadSummary();
                     return;
                   }
 

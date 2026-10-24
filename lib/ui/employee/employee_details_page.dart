@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../models/employee.dart';
 import '../../../models/user.dart';
 import '../../../services/employee_service.dart';
+import '../../../services/user_service.dart';
 import 'employee_form_page.dart';
 
 class EmployeeDetailsPage
@@ -37,10 +38,13 @@ class _EmployeeDetailsPageState
 
   final EmployeeService _employeeService =
       EmployeeService();
+  final UserService _userService =
+      UserService();
 
   late Employee _employee;
 
   bool _isLoading = false;
+  bool _revealPassword = false;
 
   @override
   void initState() {
@@ -207,6 +211,174 @@ class _EmployeeDetailsPageState
         ),
       );
     }
+  }
+
+  void _openChangePasswordDialog() {
+    final targetUserId = _employee.userId;
+    if (targetUserId == null || targetUserId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No linked user account found for this employee.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool obscureNew = true;
+    bool isSubmitting = false;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: violet.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.vpn_key_rounded, color: violet, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Change Password', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                        Text('${_employee.firstName} (${_employee.employeeCode})', style: const TextStyle(fontSize: 12.5, color: textMuted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_employee.password != null && _employee.password!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('Current: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: textMuted)),
+                            Expanded(
+                              child: Text(
+                                _employee.password!,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textDark, fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    TextField(
+                      controller: passwordController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        hintText: 'At least 6 characters',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
+                          onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 10),
+                      Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 12.5)),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          final newPass = passwordController.text.trim();
+                          final confirmPass = confirmController.text.trim();
+                          if (newPass.length < 6) {
+                            setDialogState(() => dialogError = 'Password must be at least 6 characters.');
+                            return;
+                          }
+                          if (newPass != confirmPass) {
+                            setDialogState(() => dialogError = 'Passwords do not match.');
+                            return;
+                          }
+                          final navigator = Navigator.of(dialogCtx);
+                          final messenger = ScaffoldMessenger.of(context);
+                          setDialogState(() {
+                            isSubmitting = true;
+                            dialogError = null;
+                          });
+                          try {
+                            await _userService.adminResetPassword(userId: targetUserId, newPassword: newPass);
+                            if (!mounted) return;
+                            navigator.pop();
+                            await _loadEmployee();
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Password updated successfully.'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                              dialogError = e.toString().replaceAll('Exception:', '').trim();
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: violet,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Save Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   // ============================================================
@@ -428,6 +600,112 @@ class _EmployeeDetailsPageState
                               .joinedDate,
                         ),
                       ),
+                    ],
+                  ),
+
+                  const SizedBox(
+                    height: 16,
+                  ),
+
+                  _section(
+                    title: 'Qualifications & Education',
+                    icon: Icons.school_outlined,
+                    children: [
+                      _infoRow(
+                        'Qualification',
+                        _employee.qualification ?? '-',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(
+                    height: 16,
+                  ),
+
+                  _section(
+                    title: 'Bank Details',
+                    icon: Icons.account_balance_outlined,
+                    children: [
+                      _infoRow(
+                        'Bank Name',
+                        _employee.bankName ?? '-',
+                      ),
+                      _infoRow(
+                        'Account Number',
+                        _employee.bankAccountNo ?? '-',
+                      ),
+                      _infoRow(
+                        'Bank Branch',
+                        _employee.bankBranch ?? '-',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(
+                    height: 16,
+                  ),
+
+                  _section(
+                    title: 'Login & Security',
+                    icon: Icons.lock_outline,
+                    children: [
+                      _infoRow(
+                        'Username',
+                        _employee.username ?? _employee.email ?? '-',
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Password',
+                              style: TextStyle(fontSize: 13, color: textMuted),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  _revealPassword
+                                      ? (_employee.password ?? 'Admin@123')
+                                      : '••••••••',
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: _revealPassword ? 'monospace' : null,
+                                    color: textDark,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _revealPassword = !_revealPassword;
+                                    });
+                                  },
+                                  child: Icon(
+                                    _revealPassword
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                    size: 18,
+                                    color: violet,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.user.roleId == 1 && _employee.userId != null) ...[
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _openChangePasswordDialog,
+                            icon: const Icon(Icons.lock_reset_rounded, size: 16, color: violet),
+                            label: const Text('Change Password', style: TextStyle(color: violet, fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
 

@@ -24,13 +24,16 @@ class CreateEmployeeRequest {
   final String? addressLine2;
   final String? city;
 
+  final String? bankName;
+  final String? bankAccountNo;
+  final String? bankBranch;
+  final String? qualification;
+
   final int? createdBy;
 
   final String username;
   final String password;
 
-  // All master IDs are required and come from live lookups
-  // (no hardcoded defaults).
   const CreateEmployeeRequest({
     required this.companyId,
     required this.branchId,
@@ -49,6 +52,10 @@ class CreateEmployeeRequest {
     this.addressLine1,
     this.addressLine2,
     this.city,
+    this.bankName,
+    this.bankAccountNo,
+    this.bankBranch,
+    this.qualification,
     this.createdBy,
     required this.username,
     required this.password,
@@ -81,6 +88,11 @@ class CreateEmployeeRequest {
       'addressLine2': addressLine2,
       'city': city,
 
+      'bankName': bankName,
+      'bankAccountNo': bankAccountNo,
+      'bankBranch': bankBranch,
+      'qualification': qualification,
+
       'createdBy': createdBy,
 
       'username': username,
@@ -107,8 +119,15 @@ class UpdateEmployeeRequest {
   final String? addressLine1;
   final String? addressLine2;
   final String? city;
+  final String? bankName;
+  final String? bankAccountNo;
+  final String? bankBranch;
+  final String? qualification;
   final bool isActive;
   final int? updatedBy;
+  final String? username;
+  final String? password;
+  final int? roleId;
 
   const UpdateEmployeeRequest({
     required this.companyId,
@@ -127,8 +146,15 @@ class UpdateEmployeeRequest {
     this.addressLine1,
     this.addressLine2,
     this.city,
+    this.bankName,
+    this.bankAccountNo,
+    this.bankBranch,
+    this.qualification,
     required this.isActive,
     this.updatedBy,
+    this.username,
+    this.password,
+    this.roleId,
   });
 
   Map<String, dynamic> toJson() {
@@ -149,8 +175,15 @@ class UpdateEmployeeRequest {
       'addressLine1': addressLine1,
       'addressLine2': addressLine2,
       'city': city,
+      'bankName': bankName,
+      'bankAccountNo': bankAccountNo,
+      'bankBranch': bankBranch,
+      'qualification': qualification,
       'isActive': isActive,
       'updatedBy': updatedBy,
+      if (username != null && username!.isNotEmpty) 'username': username,
+      if (password != null && password!.isNotEmpty) 'password': password,
+      if (roleId != null) 'roleId': roleId,
     };
   }
 }

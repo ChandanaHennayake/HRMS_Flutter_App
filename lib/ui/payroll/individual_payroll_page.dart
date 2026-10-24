@@ -552,7 +552,10 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
             const SizedBox(height: 14),
 
             // Date Range Presets
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ActionChip(
                   label: const Text('This Month', style: TextStyle(fontSize: 12)),
@@ -568,7 +571,6 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
                     _loadEmployeePreview();
                   },
                 ),
-                const SizedBox(width: 8),
                 ActionChip(
                   label: const Text('Last Month', style: TextStyle(fontSize: 12)),
                   backgroundColor: Colors.grey.shade200,
@@ -584,7 +586,6 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
                     _loadEmployeePreview();
                   },
                 ),
-                const Spacer(),
                 TextButton.icon(
                   onPressed: () async {
                     final picked = await showDateRangePicker(

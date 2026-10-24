@@ -73,6 +73,18 @@ class _EmployeeFormPageState
   final TextEditingController cityController =
       TextEditingController();
 
+  final TextEditingController qualificationController =
+      TextEditingController();
+
+  final TextEditingController bankNameController =
+      TextEditingController();
+
+  final TextEditingController bankAccountNoController =
+      TextEditingController();
+
+  final TextEditingController bankBranchController =
+      TextEditingController();
+
   final TextEditingController usernameController =
       TextEditingController();
 
@@ -130,6 +142,10 @@ class _EmployeeFormPageState
     addressLine1Controller.text = e.addressLine1 ?? '';
     addressLine2Controller.text = e.addressLine2 ?? '';
     cityController.text = e.city ?? '';
+    qualificationController.text = e.qualification ?? '';
+    bankNameController.text = e.bankName ?? '';
+    bankAccountNoController.text = e.bankAccountNo ?? '';
+    bankBranchController.text = e.bankBranch ?? '';
     if (e.dateOfBirth != null) {
       dateOfBirthController.text = _formatDate(e.dateOfBirth!);
     }
@@ -141,6 +157,13 @@ class _EmployeeFormPageState
     departmentId = e.departmentId;
     designationId = e.designationId;
     employmentTypeId = e.employmentTypeId;
+
+    if (e.username != null && e.username!.isNotEmpty) {
+      usernameController.text = e.username!;
+    }
+    if (e.password != null && e.password!.isNotEmpty) {
+      passwordController.text = e.password!;
+    }
   }
 
   Future<void> _loadLookups() async {
@@ -204,6 +227,10 @@ class _EmployeeFormPageState
     addressLine1Controller.dispose();
     addressLine2Controller.dispose();
     cityController.dispose();
+    qualificationController.dispose();
+    bankNameController.dispose();
+    bankAccountNoController.dispose();
+    bankBranchController.dispose();
     usernameController.dispose();
     passwordController.dispose();
 
@@ -299,6 +326,26 @@ class _EmployeeFormPageState
           cityController.text,
         ),
 
+        bankName:
+            _nullableText(
+          bankNameController.text,
+        ),
+
+        bankAccountNo:
+            _nullableText(
+          bankAccountNoController.text,
+        ),
+
+        bankBranch:
+            _nullableText(
+          bankBranchController.text,
+        ),
+
+        qualification:
+            _nullableText(
+          qualificationController.text,
+        ),
+
         // ============================================
         // LOGIN
         // ============================================
@@ -380,8 +427,15 @@ class _EmployeeFormPageState
       addressLine1: _nullableText(addressLine1Controller.text),
       addressLine2: _nullableText(addressLine2Controller.text),
       city: _nullableText(cityController.text),
+      bankName: _nullableText(bankNameController.text),
+      bankAccountNo: _nullableText(bankAccountNoController.text),
+      bankBranch: _nullableText(bankBranchController.text),
+      qualification: _nullableText(qualificationController.text),
       isActive: e.isActive,
       updatedBy: widget.user.userId,
+      username: _nullableText(usernameController.text),
+      password: _nullableText(passwordController.text),
+      roleId: roleId,
     );
 
     await _employeeService.updateEmployee(
@@ -852,39 +906,115 @@ class _EmployeeFormPageState
               ),
 
               // ============================================
-              // LOGIN
+              // QUALIFICATIONS & EDUCATION
               // ============================================
 
-              if (!widget.isEditMode) ...[
-                _sectionTitle(
-                  'Login Details',
-                ),
+              _sectionTitle(
+                'Qualifications & Education',
+              ),
 
-                const SizedBox(
-                  height: 12,
-                ),
+              const SizedBox(
+                height: 12,
+              ),
 
-                _textField(
-                  controller:
-                      usernameController,
-                  label:
-                      'Username',
-                  icon:
-                      Icons.account_circle_outlined,
-                  requiredField:
-                      true,
-                ),
+              _textField(
+                controller:
+                    qualificationController,
+                label:
+                    'Highest Qualification / Degree / Certifications',
+                icon:
+                    Icons.school_outlined,
+              ),
 
-                const SizedBox(
-                  height: 12,
-                ),
+              const SizedBox(
+                height: 28,
+              ),
 
-                _passwordField(),
+              // ============================================
+              // BANK & REMITTANCE DETAILS
+              // ============================================
 
-                const SizedBox(
-                  height: 30,
-                ),
-              ],
+              _sectionTitle(
+                'Bank Details',
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              _textField(
+                controller:
+                    bankNameController,
+                label:
+                    'Bank Name',
+                icon:
+                    Icons.account_balance_outlined,
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              _textField(
+                controller:
+                    bankAccountNoController,
+                label:
+                    'Account Number',
+                icon:
+                    Icons.credit_card_outlined,
+                keyboardType:
+                    TextInputType.number,
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              _textField(
+                controller:
+                    bankBranchController,
+                label:
+                    'Bank Branch',
+                icon:
+                    Icons.storefront_outlined,
+              ),
+
+              const SizedBox(
+                height: 28,
+              ),
+
+              // ============================================
+              // LOGIN & CREDENTIALS
+              // ============================================
+
+              _sectionTitle(
+                widget.isEditMode ? 'User Account & Credentials' : 'Login Details',
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              _textField(
+                controller:
+                    usernameController,
+                label:
+                    'Username',
+                icon:
+                    Icons.account_circle_outlined,
+                requiredField:
+                    !widget.isEditMode,
+              ),
+
+              const SizedBox(
+                height: 12,
+              ),
+
+              _passwordField(isOptional: widget.isEditMode),
+
+              const SizedBox(
+                height: 30,
+              ),
 
               // ============================================
               // SAVE
@@ -1220,7 +1350,7 @@ class _EmployeeFormPageState
   // PASSWORD
   // ============================================================
 
-  Widget _passwordField() {
+  Widget _passwordField({bool isOptional = false}) {
     return TextFormField(
       controller:
           passwordController,
@@ -1231,7 +1361,7 @@ class _EmployeeFormPageState
       decoration:
           _inputDecoration(
         label:
-            'Password',
+            widget.isEditMode ? 'Password (leave blank to keep current)' : 'Password',
         icon:
             Icons.lock_outline,
       ).copyWith(
@@ -1254,6 +1384,10 @@ class _EmployeeFormPageState
       ),
 
       validator: (value) {
+        if (isOptional && (value == null || value.trim().isEmpty)) {
+          return null;
+        }
+
         if (value ==
                 null ||
             value

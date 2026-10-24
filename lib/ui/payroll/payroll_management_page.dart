@@ -126,7 +126,7 @@ class _PayrollManagementPageState extends State<PayrollManagementPage> {
                       child: DropdownButtonFormField<int>(
                         initialValue: selectedYear,
                         decoration: const InputDecoration(labelText: 'Year', border: OutlineInputBorder()),
-                        items: [2025, 2026, 2027].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
+                        items: [2024, 2025, 2026, 2027].map((y) => DropdownMenuItem(value: y, child: Text('$y'))).toList(),
                         onChanged: (v) {
                           if (v != null) setDlgState(() => selectedYear = v);
                         },
@@ -137,7 +137,20 @@ class _PayrollManagementPageState extends State<PayrollManagementPage> {
                       child: DropdownButtonFormField<int>(
                         initialValue: selectedMonth,
                         decoration: const InputDecoration(labelText: 'Month', border: OutlineInputBorder()),
-                        items: List.generate(12, (i) => i + 1).map((m) => DropdownMenuItem(value: m, child: Text('M$m'))).toList(),
+                        items: const [
+                          DropdownMenuItem(value: 1, child: Text('January')),
+                          DropdownMenuItem(value: 2, child: Text('February')),
+                          DropdownMenuItem(value: 3, child: Text('March')),
+                          DropdownMenuItem(value: 4, child: Text('April')),
+                          DropdownMenuItem(value: 5, child: Text('May')),
+                          DropdownMenuItem(value: 6, child: Text('June')),
+                          DropdownMenuItem(value: 7, child: Text('July')),
+                          DropdownMenuItem(value: 8, child: Text('August')),
+                          DropdownMenuItem(value: 9, child: Text('September')),
+                          DropdownMenuItem(value: 10, child: Text('October')),
+                          DropdownMenuItem(value: 11, child: Text('November')),
+                          DropdownMenuItem(value: 12, child: Text('December')),
+                        ],
                         onChanged: (v) {
                           if (v != null) setDlgState(() => selectedMonth = v);
                         },

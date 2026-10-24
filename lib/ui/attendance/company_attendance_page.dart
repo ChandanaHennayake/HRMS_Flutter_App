@@ -161,9 +161,10 @@ class _CompanyAttendancePageState extends State<CompanyAttendancePage> {
 
   String _formatTime(DateTime? dt) {
     if (dt == null) return '--:--';
-    final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-    final period = dt.hour >= 12 ? 'PM' : 'AM';
-    final min = dt.minute.toString().padLeft(2, '0');
+    final local = dt.toLocal();
+    final hour = local.hour > 12 ? local.hour - 12 : (local.hour == 0 ? 12 : local.hour);
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    final min = local.minute.toString().padLeft(2, '0');
     return '$hour:$min $period';
   }
 

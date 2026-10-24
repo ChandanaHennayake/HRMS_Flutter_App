@@ -5,7 +5,10 @@ class AdminUserItem {
   final String fullName;
   final String role;
   final int? roleId;
+  final int? employeeId;
   final bool isActive;
+  final bool isDeleted;
+  final String? clearPassword;
 
   AdminUserItem({
     required this.userId,
@@ -14,7 +17,10 @@ class AdminUserItem {
     required this.fullName,
     required this.role,
     this.roleId,
+    this.employeeId,
     required this.isActive,
+    this.isDeleted = false,
+    this.clearPassword,
   });
 
   factory AdminUserItem.fromJson(Map<String, dynamic> json) {
@@ -39,7 +45,10 @@ class AdminUserItem {
       fullName: json['fullName'] ?? json['FullName'] ?? '',
       role: roleStr,
       roleId: rId is num ? rId.toInt() : null,
+      employeeId: json['employeeId'] ?? json['EmployeeId'],
       isActive: json['isActive'] ?? json['IsActive'] ?? true,
+      isDeleted: json['isDeleted'] ?? json['IsDeleted'] ?? false,
+      clearPassword: json['clearPassword'] ?? json['ClearPassword'] ?? json['password'] ?? json['passwordSalt'],
     );
   }
 }

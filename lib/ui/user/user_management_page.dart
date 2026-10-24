@@ -33,6 +33,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   String _searchQuery = '';
   String _selectedRoleFilter = 'All';
+  String _selectedStatusFilter = 'All';
+  final Set<int> _revealedPasswords = {};
 
   List<LookupItem> _roles = [];
   List<LookupItem> _branches = [];
@@ -75,6 +77,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   List<AdminUserItem> get _filteredUsers {
     return _users.where((u) {
+      if (_selectedStatusFilter == 'Active' && (!u.isActive || u.isDeleted)) return false;
+      if (_selectedStatusFilter == 'Inactive' && (u.isActive && !u.isDeleted)) return false;
+
       final matchesQuery = _searchQuery.isEmpty ||
           u.fullName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           u.username.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -143,6 +148,11 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
     try {
       await _userService.deleteUser(item.userId);
+      if (mounted) {
+        setState(() {
+          _users.removeWhere((u) => u.userId == item.userId);
+        });
+      }
       _loadData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,6 +172,167 @@ class _UserManagementPageState extends State<UserManagementPage> {
         ),
       );
     }
+  }
+
+  // ============================================================
+  // CHANGE PASSWORD DIALOG (ADMIN)
+  // ============================================================
+
+  void _openChangePasswordDialog(AdminUserItem u) {
+    final passwordController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool obscureNew = true;
+    bool isSubmitting = false;
+    String? dialogError;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: violet.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.vpn_key_rounded, color: violet, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Change Password', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                        Text('@${u.username}', style: const TextStyle(fontSize: 12.5, color: textMuted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (u.clearPassword != null && u.clearPassword!.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('Current: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: textMuted)),
+                            Expanded(
+                              child: Text(
+                                u.clearPassword!,
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textDark, fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    TextField(
+                      controller: passwordController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'New Password',
+                        hintText: 'At least 6 characters',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(obscureNew ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20),
+                          onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                        ),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmController,
+                      obscureText: obscureNew,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 10),
+                      Text(dialogError!, style: const TextStyle(color: Colors.red, fontSize: 12.5)),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          final newPass = passwordController.text.trim();
+                          final confirmPass = confirmController.text.trim();
+                          if (newPass.length < 6) {
+                            setDialogState(() => dialogError = 'Password must be at least 6 characters.');
+                            return;
+                          }
+                          if (newPass != confirmPass) {
+                            setDialogState(() => dialogError = 'Passwords do not match.');
+                            return;
+                          }
+                          final navigator = Navigator.of(dialogCtx);
+                          final messenger = ScaffoldMessenger.of(context);
+                          setDialogState(() {
+                            isSubmitting = true;
+                            dialogError = null;
+                          });
+                          try {
+                            await _userService.adminResetPassword(userId: u.userId, newPassword: newPass);
+                            if (!mounted) return;
+                            navigator.pop();
+                            _loadData();
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Password updated successfully for @${u.username}.'),
+                                backgroundColor: Colors.green,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } catch (e) {
+                            setDialogState(() {
+                              isSubmitting = false;
+                              dialogError = e.toString().replaceAll('Exception:', '').trim();
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: violet,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: isSubmitting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Save Password'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   // ============================================================
@@ -241,35 +412,74 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
           const SizedBox(height: 10),
 
-          // Role Filter Chips
+          // Role & Status Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: roles.map((r) {
-                final isSelected = _selectedRoleFilter == r;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(r),
-                    selected: isSelected,
-                    onSelected: (_) => setState(() => _selectedRoleFilter = r),
-                    selectedColor: violet.withValues(alpha: 0.15),
-                    checkmarkColor: violet,
-                    labelStyle: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? violet : textDark,
-                    ),
-                    backgroundColor: const Color(0xFFF7F5FA),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(
-                        color: isSelected ? violet : Colors.transparent,
+              children: [
+                ...roles.map((r) {
+                  final isSelected = _selectedRoleFilter == r;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: FilterChip(
+                      label: Text(r),
+                      selected: isSelected,
+                      onSelected: (_) => setState(() => _selectedRoleFilter = r),
+                      selectedColor: violet.withValues(alpha: 0.15),
+                      checkmarkColor: violet,
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? violet : textDark,
+                      ),
+                      backgroundColor: const Color(0xFFF7F5FA),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: isSelected ? violet : Colors.transparent,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }),
+                Container(
+                  height: 20,
+                  width: 1,
+                  color: Colors.grey.shade300,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                ),
+                ...['All', 'Active', 'Inactive'].map((st) {
+                  final isSelected = _selectedStatusFilter == st;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: FilterChip(
+                      label: Text(st == 'All' ? 'All Status' : st),
+                      selected: isSelected,
+                      onSelected: (_) => setState(() => _selectedStatusFilter = st),
+                      selectedColor: st == 'Inactive'
+                          ? Colors.red.withValues(alpha: 0.15)
+                          : Colors.green.withValues(alpha: 0.15),
+                      checkmarkColor: st == 'Inactive' ? Colors.red : Colors.green,
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? (st == 'Inactive' ? Colors.red : Colors.green.shade800)
+                            : textDark,
+                      ),
+                      backgroundColor: const Color(0xFFF7F5FA),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: isSelected
+                              ? (st == 'Inactive' ? Colors.red : Colors.green)
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         ],
@@ -422,6 +632,25 @@ class _UserManagementPageState extends State<UserManagementPage> {
                           ),
                         ),
                       ),
+                      if (!u.isActive || u.isDeleted) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: Text(
+                            u.isDeleted ? 'Deleted' : 'Inactive',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
@@ -437,16 +666,74 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  const SizedBox(height: 6),
+                  // Password display chip with eye toggle
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.key_rounded, size: 13, color: violet),
+                        const SizedBox(width: 5),
+                        Text(
+                          _revealedPasswords.contains(u.userId)
+                              ? (u.clearPassword ?? 'Admin@123')
+                              : '••••••••',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: _revealedPasswords.contains(u.userId) ? 'monospace' : null,
+                            color: textDark,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              if (_revealedPasswords.contains(u.userId)) {
+                                _revealedPasswords.remove(u.userId);
+                              } else {
+                                _revealedPasswords.add(u.userId);
+                              }
+                            });
+                          },
+                          child: Icon(
+                            _revealedPasswords.contains(u.userId)
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            size: 15,
+                            color: textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // Delete Action
-            if (u.username != 'admin')
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                onPressed: () => _confirmDeleteUser(u),
-              ),
+            // Actions: Change Password & Delete
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: 'Change Password',
+                  icon: const Icon(Icons.lock_reset_rounded, color: violet, size: 22),
+                  onPressed: () => _openChangePasswordDialog(u),
+                ),
+                if (u.username != 'admin')
+                  IconButton(
+                    tooltip: 'Delete User',
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                    onPressed: () => _confirmDeleteUser(u),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

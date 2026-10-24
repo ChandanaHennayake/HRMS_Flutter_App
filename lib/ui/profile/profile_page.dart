@@ -463,7 +463,7 @@ class _ProfilePageState extends State<ProfilePage> {
               value: (_profile?.branchLatitude != null &&
                       _profile?.branchLongitude != null)
                   ? '${_profile!.branchLatitude!.toStringAsFixed(5)}, ${_profile!.branchLongitude!.toStringAsFixed(5)}'
-                  : '6.92710, 79.86120 (Colombo HQ)',
+                  : 'Not configured',
             ),
             _InfoRow(
               icon: Icons.radar_outlined,

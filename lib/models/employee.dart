@@ -25,7 +25,16 @@ class Employee {
   final String? addressLine2;
   final String? city;
 
+  final String? bankName;
+  final String? bankAccountNo;
+  final String? bankBranch;
+  final String? qualification;
+
   final bool isActive;
+
+  final int? userId;
+  final String? username;
+  final String? password;
 
   Employee({
     required this.id,
@@ -45,7 +54,14 @@ class Employee {
     this.addressLine1,
     this.addressLine2,
     this.city,
+    this.bankName,
+    this.bankAccountNo,
+    this.bankBranch,
+    this.qualification,
     required this.isActive,
+    this.userId,
+    this.username,
+    this.password,
   });
 
   // ============================================================
@@ -106,8 +122,26 @@ class Employee {
       city:
           json['city']?.toString(),
 
+      bankName:
+          json['bankName']?.toString(),
+
+      bankAccountNo:
+          json['bankAccountNo']?.toString(),
+
+      bankBranch:
+          json['bankBranch']?.toString(),
+
+      qualification:
+          json['qualification']?.toString(),
+
       isActive:
           _toBool(json['isActive']),
+      userId:
+          _toInt(json['userId'] ?? json['UserId']),
+      username:
+          json['username']?.toString() ?? json['Username']?.toString(),
+      password:
+          json['password']?.toString() ?? json['Password']?.toString() ?? json['clearPassword']?.toString(),
     );
   }
 
@@ -146,7 +180,15 @@ class Employee {
       'addressLine2': addressLine2,
       'city': city,
 
+      'bankName': bankName,
+      'bankAccountNo': bankAccountNo,
+      'bankBranch': bankBranch,
+      'qualification': qualification,
+
       'isActive': isActive,
+      'userId': userId,
+      'username': username,
+      'password': password,
     };
   }
 
@@ -172,7 +214,14 @@ class Employee {
     String? addressLine1,
     String? addressLine2,
     String? city,
+    String? bankName,
+    String? bankAccountNo,
+    String? bankBranch,
+    String? qualification,
     bool? isActive,
+    int? userId,
+    String? username,
+    String? password,
   }) {
     return Employee(
       id: id ?? this.id,
@@ -226,8 +275,26 @@ class Employee {
       city:
           city ?? this.city,
 
+      bankName:
+          bankName ?? this.bankName,
+
+      bankAccountNo:
+          bankAccountNo ?? this.bankAccountNo,
+
+      bankBranch:
+          bankBranch ?? this.bankBranch,
+
+      qualification:
+          qualification ?? this.qualification,
+
       isActive:
           isActive ?? this.isActive,
+      userId:
+          userId ?? this.userId,
+      username:
+          username ?? this.username,
+      password:
+          password ?? this.password,
     );
   }
 

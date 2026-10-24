@@ -7,6 +7,7 @@ import '../../../models/user.dart';
 import '../../../services/attendance_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/holiday_service.dart';
+import '../../../services/user_service.dart';
 import '../../auth/login_view.dart';
 import '../../holiday/holidays_page.dart';
 import '../../leave/leave_page.dart';
@@ -58,16 +59,39 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
   String workedTime = '00h 00m';
   String overtime = '00h 00m';
 
+  final UserService _userService =
+      UserService();
+
   String currentLocationText =
       'GPS location will be captured when marking attendance';
 
-  final String branchName = 'Colombo Branch';
+  String branchName = 'Assigned Branch';
 
   @override
   void initState() {
     super.initState();
+    branchName = (widget.user.branchName != null &&
+            widget.user.branchName!.trim().isNotEmpty)
+        ? widget.user.branchName!
+        : 'Assigned Branch';
     _loadTodayAttendance();
     _loadUpcomingHoliday();
+    _loadBranchInfo();
+  }
+
+  Future<void> _loadBranchInfo() async {
+    if (widget.user.userId <= 0) return;
+    try {
+      final profile = await _userService.getUserProfile(widget.user.userId);
+      if (!mounted) return;
+      if (profile.branchName != null && profile.branchName!.trim().isNotEmpty) {
+        setState(() {
+          branchName = profile.branchName!;
+        });
+      }
+    } catch (_) {
+      // Keep existing branchName if profile fetch fails
+    }
   }
 
   // ============================================================
@@ -251,6 +275,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         employeeId: employeeId,
         latitude: latitude,
         longitude: longitude,
+        deviceTime: DateTime.now(),
       );
 
       await _loadTodayAttendance();
@@ -314,6 +339,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
         employeeId: widget.user.employeeId,
         latitude: latitude,
         longitude: longitude,
+        deviceTime: DateTime.now(),
       );
 
       await _loadTodayAttendance();
@@ -714,7 +740,7 @@ Future<void> _openPayslipsPage() async {
                     SizedBox(height: 5),
 
                     Text(
-                      '8:00 AM - 5:00 PM',
+                      '8:30 AM - 7:30 PM',
                       style: TextStyle(
                         color: textDark,
                         fontSize: 17,

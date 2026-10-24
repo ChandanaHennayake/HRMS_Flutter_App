@@ -43,18 +43,20 @@ class AuthService {
         rememberMe,
       );
 
-     await SecureStorage.saveUser(
-  userId: data.user.userId,
-  employeeId: data.user.employeeId,
-  username: data.user.username,
-  email: data.user.email,
-  fullName: data.user.fullName,
-  roleId: data.user.roleId,
-  role: data.user.role,
-  companyId: data.user.companyId,
-  branchId: data.user.branchId,
-  expiration: data.expiration,
-);
+      await SecureStorage.saveUser(
+        userId: data.user.userId,
+        employeeId: data.user.employeeId,
+        username: data.user.username,
+        email: data.user.email,
+        fullName: data.user.fullName,
+        roleId: data.user.roleId,
+        role: data.user.role,
+        companyId: data.user.companyId,
+        branchId: data.user.branchId,
+        branchName: data.user.branchName,
+        expiration: data.expiration,
+      );
+
     }
 
     return result;

@@ -46,12 +46,15 @@ class AttendanceService {
     required int employeeId,
     required double latitude,
     required double longitude,
+    DateTime? deviceTime,
   }) async {
+    final now = deviceTime ?? DateTime.now();
     final response = await _apiClient.post(
       '${ApiConstants.checkIn}?employeeId=$employeeId',
       body: {
         'latitude': latitude,
         'longitude': longitude,
+        'deviceTime': now.toIso8601String(),
       },
     );
 
@@ -71,12 +74,15 @@ class AttendanceService {
     required int employeeId,
     required double latitude,
     required double longitude,
+    DateTime? deviceTime,
   }) async {
+    final now = deviceTime ?? DateTime.now();
     final response = await _apiClient.post(
       '${ApiConstants.checkOut}?employeeId=$employeeId',
       body: {
         'latitude': latitude,
         'longitude': longitude,
+        'deviceTime': now.toIso8601String(),
       },
     );
 

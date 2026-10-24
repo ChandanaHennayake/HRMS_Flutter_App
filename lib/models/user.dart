@@ -8,6 +8,7 @@ class User {
   final String role;
   final int companyId;
   final int branchId;
+  final String? branchName;
 
   User({
     required this.userId,
@@ -19,6 +20,7 @@ class User {
     required this.role,
     required this.companyId,
     required this.branchId,
+    this.branchName,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,22 @@ class User {
       role: json['role'] ?? '',
       companyId: json['companyId'] ?? 0,
       branchId: json['branchId'] ?? 0,
+      branchName: json['branchName']?.toString(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'employeeId': employeeId,
+      'username': username,
+      'email': email,
+      'fullName': fullName,
+      'roleId': roleId,
+      'role': role,
+      'companyId': companyId,
+      'branchId': branchId,
+      'branchName': branchName,
+    };
   }
 }

@@ -1885,8 +1885,9 @@ class _AttendanceHistoryPageState
       return '--:--';
     }
 
+    final local = value.toLocal();
     final hour =
-        value.hour
+        local.hour
             .toString()
             .padLeft(
           2,
@@ -1894,7 +1895,7 @@ class _AttendanceHistoryPageState
         );
 
     final minute =
-        value.minute
+        local.minute
             .toString()
             .padLeft(
           2,
