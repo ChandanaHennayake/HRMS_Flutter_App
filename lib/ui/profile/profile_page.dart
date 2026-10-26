@@ -252,27 +252,31 @@ class _ProfilePageState extends State<ProfilePage> {
           // Nav Bar
           Row(
             children: [
-              Material(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () => Navigator.of(context).pop(),
+              if (Navigator.of(context).canPop())
+                Material(
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  child: const SizedBox(
-                    width: 42,
-                    height: 42,
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                      size: 18,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: const SizedBox(
+                      width: 42,
+                      height: 42,
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
-                ),
-              ),
+                )
+              else
+                const SizedBox(width: 42),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'My Profile',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
@@ -324,6 +328,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
           Text(
             displayName,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -333,8 +340,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
           const SizedBox(height: 6),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -352,8 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-              if (_profile?.employeeCode != null) ...[
-                const SizedBox(width: 8),
+              if (_profile?.employeeCode != null)
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -370,7 +378,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-              ],
             ],
           ),
         ],
@@ -474,72 +481,20 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
 
-        // Edit Details Quick Action Banner
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 18),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2E1065), Color(0xFF4C1D95)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: violet.withValues(alpha: 0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.manage_accounts_rounded, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Personal & Bank Details',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Change bank account, phone, or address',
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: _openRequestProfileChange,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brightViolet,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 0,
-                ),
-                child: const Text('Edit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
-
         // Bank & Payment Information Card
         _buildInfoCard(
           title: 'Bank & Payment Details',
           icon: Icons.account_balance_outlined,
+          trailingAction: TextButton.icon(
+            onPressed: _openRequestProfileChange,
+            icon: const Icon(Icons.edit_outlined, size: 14, color: violet),
+            label: const Text('Edit', style: TextStyle(color: violet, fontWeight: FontWeight.bold, fontSize: 12.5)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
           items: [
             _InfoRow(
               icon: Icons.account_balance,
@@ -574,6 +529,16 @@ class _ProfilePageState extends State<ProfilePage> {
         _buildInfoCard(
           title: 'Personal & Contact Details',
           icon: Icons.person_outline,
+          trailingAction: TextButton.icon(
+            onPressed: _openRequestProfileChange,
+            icon: const Icon(Icons.edit_outlined, size: 14, color: violet),
+            label: const Text('Edit', style: TextStyle(color: violet, fontWeight: FontWeight.bold, fontSize: 12.5)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
           items: [
             _InfoRow(
               icon: Icons.badge_outlined,
@@ -797,29 +762,36 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ESTIMATED NET SALARY',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.6,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ESTIMATED NET SALARY',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'LKR ${netPay.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+                      const SizedBox(height: 4),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'LKR ${netPay.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -960,6 +932,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required String title,
     required IconData icon,
     required List<_InfoRow> items,
+    Widget? trailingAction,
   }) {
     return Container(
       width: double.infinity,
@@ -980,63 +953,76 @@ class _ProfilePageState extends State<ProfilePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, color: violet, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: textDark,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  Icon(icon, color: violet, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: textDark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
+              ?trailingAction,
             ],
           ),
           const SizedBox(height: 14),
           const Divider(height: 1, color: Color(0xFFF3EFF8)),
           const SizedBox(height: 10),
           ...items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6F3FA),
-                      borderRadius: BorderRadius.circular(9),
+            (item) {
+              final isUnset = item.value == 'Not configured' ||
+                  item.value == 'Not provided' ||
+                  item.value == 'Not specified';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F3FA),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(item.icon, color: textMuted, size: 16),
                     ),
-                    child: Icon(item.icon, color: textMuted, size: 16),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.label,
-                          style: const TextStyle(
-                            color: textMuted,
-                            fontSize: 11,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.label,
+                            style: const TextStyle(
+                              color: textMuted,
+                              fontSize: 11,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          item.value,
-                          style: const TextStyle(
-                            color: textDark,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 2),
+                          Text(
+                            item.value,
+                            style: TextStyle(
+                              color: isUnset ? textMuted : textDark,
+                              fontSize: 13,
+                              fontWeight: isUnset ? FontWeight.normal : FontWeight.w600,
+                              fontStyle: isUnset ? FontStyle.italic : FontStyle.normal,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

@@ -4,7 +4,6 @@ import '../../models/payroll.dart';
 import '../../services/employee_service.dart';
 import '../../services/payroll_service.dart';
 import '../../core/theme/app_colors.dart';
-import 'payslip_page.dart';
 
 class IndividualPayrollPage extends StatefulWidget {
   final int? preselectedEmployeeId;
@@ -389,22 +388,27 @@ class _IndividualPayrollPageState extends State<IndividualPayrollPage> {
         'paymentStatus': _paymentStatus,
       };
 
-      final payslip = await _payrollService.saveIndividualPayroll(request);
+      await _payrollService.saveIndividualPayroll(request);
 
       setState(() => _saving = false);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payslip saved successfully!'), backgroundColor: Colors.green),
-        );
-
-        // Open Payslip details
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PayslipPage(payslipId: payslip.id),
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Employee payroll saved successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
+
+        // Return back to the dashboard
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       setState(() => _saving = false);

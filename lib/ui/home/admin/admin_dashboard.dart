@@ -29,7 +29,6 @@ import '../../notification/notification_bell.dart';
 
 // Payroll
 import '../../payroll/payroll_management_page.dart';
-import '../../payroll/individual_payroll_page.dart';
 
 // Notices
 import '../../notice/notice_management_page.dart';
@@ -981,11 +980,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Icons.account_balance_wallet_outlined,
         'title': 'Payroll',
       },
-      {
-        'icon':
-            Icons.calculate_outlined,
-        'title': 'Emp Payroll',
-      },
+      // {
+      //   'icon':
+      //       Icons.calculate_outlined,
+      //   'title': 'Emp Payroll',
+      // },
       {
         'icon':
             Icons.manage_accounts_outlined,
@@ -1140,20 +1139,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   }
 
                   // ==================================================
-                  // INDIVIDUAL EMPLOYEE PAYROLL
+                  // INDIVIDUAL EMPLOYEE PAYROLL (Commented out - accessible via Payroll management)
                   // ==================================================
 
-                  if (title == 'Emp Payroll') {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const IndividualPayrollPage(),
-                      ),
-                    );
-                    if (!mounted) return;
-                    _loadSummary();
-                    return;
-                  }
+                  // if (title == 'Emp Payroll') {
+                  //   await Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (_) => const IndividualPayrollPage(),
+                  //     ),
+                  //   );
+                  //   if (!mounted) return;
+                  //   _loadSummary();
+                  //   return;
+                  // }
 
                   // ==================================================
                   // PROFILE CHANGE REQUESTS
