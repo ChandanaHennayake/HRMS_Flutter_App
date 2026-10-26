@@ -9,6 +9,8 @@ import '../../services/user_service.dart';
 import '../auth/login_view.dart';
 import '../payroll/my_payslips_page.dart';
 import 'change_password_dialog.dart';
+import 'profile_change_requests_page.dart';
+import 'request_profile_change_dialog.dart';
 
 class ProfilePage extends StatefulWidget {
   final User user;
@@ -103,6 +105,50 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     }
+  }
+
+  Future<void> _openRequestProfileChange() async {
+    if (_profile == null) return;
+    final empId = (_profile!.employeeId != null && _profile!.employeeId! > 0)
+        ? _profile!.employeeId!
+        : widget.user.employeeId;
+
+    final success = await showDialog<bool>(
+      context: context,
+      builder: (_) => RequestProfileChangeDialog(
+        profile: _profile!,
+        employeeId: empId,
+      ),
+    );
+
+    if (success == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Profile change request submitted for Manager/Admin review!'),
+            ],
+          ),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _loadProfile();
+    }
+  }
+
+  void _openChangeHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileChangeRequestsPage(
+          user: widget.user,
+          isManagerOrAdmin: widget.user.roleId == 1 || widget.user.roleId == 2,
+        ),
+      ),
+    ).then((_) => _loadProfile());
   }
 
   Future<void> _logout() async {
@@ -388,10 +434,196 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Column(
       children: [
+        // Pending Change Request Warning Banner
+        if (_profile?.hasPendingChangeRequest == true) ...[
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 18),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFCD34D)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.pending_actions_rounded, color: Color(0xFFD97706), size: 24),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Change Request Pending',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF92400E)),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Your updated details are awaiting review by management.',
+                        style: TextStyle(fontSize: 11.5, color: Color(0xFFB45309)),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: _openChangeHistory,
+                  child: const Text('View', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF92400E))),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Edit Details Quick Action Banner
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2E1065), Color(0xFF4C1D95)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: violet.withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.manage_accounts_rounded, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Personal & Bank Details',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Change bank account, phone, or address',
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: _openRequestProfileChange,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: brightViolet,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 0,
+                ),
+                child: const Text('Edit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+
+        // Bank & Payment Information Card
+        _buildInfoCard(
+          title: 'Bank & Payment Details',
+          icon: Icons.account_balance_outlined,
+          items: [
+            _InfoRow(
+              icon: Icons.account_balance,
+              label: 'Bank Name',
+              value: _profile?.bankName?.isNotEmpty == true
+                  ? _profile!.bankName!
+                  : (_salary?.bankName?.isNotEmpty == true ? _salary!.bankName! : 'Not configured'),
+            ),
+            _InfoRow(
+              icon: Icons.numbers_outlined,
+              label: 'Account Number',
+              value: _profile?.bankAccountNo?.isNotEmpty == true
+                  ? _profile!.bankAccountNo!
+                  : (_salary?.bankAccountNo?.isNotEmpty == true ? _salary!.bankAccountNo! : 'Not configured'),
+            ),
+            _InfoRow(
+              icon: Icons.location_city_outlined,
+              label: 'Bank Branch',
+              value: _profile?.bankBranch?.isNotEmpty == true ? _profile!.bankBranch! : 'Not specified',
+            ),
+            _InfoRow(
+              icon: Icons.payments_outlined,
+              label: 'Payment Method',
+              value: _salary?.paymentMode ?? 'Bank Transfer',
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
+        // Personal Information Card
+        _buildInfoCard(
+          title: 'Personal & Contact Details',
+          icon: Icons.person_outline,
+          items: [
+            _InfoRow(
+              icon: Icons.badge_outlined,
+              label: 'Full Name',
+              value: _profile?.fullName ?? widget.user.fullName,
+            ),
+            _InfoRow(
+              icon: Icons.phone_outlined,
+              label: 'Phone Number',
+              value: _profile?.phone?.isNotEmpty == true ? _profile!.phone! : 'Not provided',
+            ),
+            _InfoRow(
+              icon: Icons.cake_outlined,
+              label: 'Date of Birth',
+              value: _profile?.dateOfBirth != null ? _formatDate(_profile!.dateOfBirth!) : 'Not provided',
+            ),
+            _InfoRow(
+              icon: Icons.people_outline,
+              label: 'Gender',
+              value: _profile?.gender ?? 'Not specified',
+            ),
+            _InfoRow(
+              icon: Icons.home_outlined,
+              label: 'Residential Address',
+              value: [
+                _profile?.addressLine1,
+                _profile?.addressLine2,
+                _profile?.city,
+              ].where((s) => s != null && s.trim().isNotEmpty).join(', ').isEmpty
+                  ? 'Not provided'
+                  : [
+                      _profile?.addressLine1,
+                      _profile?.addressLine2,
+                      _profile?.city,
+                    ].where((s) => s != null && s.trim().isNotEmpty).join(', '),
+            ),
+            _InfoRow(
+              icon: Icons.school_outlined,
+              label: 'Qualification',
+              value: _profile?.qualification?.isNotEmpty == true ? _profile!.qualification! : 'Not specified',
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
         // Account Details Card
         _buildInfoCard(
           title: 'Account Information',
-          icon: Icons.person_outline,
+          icon: Icons.shield_outlined,
           items: [
             _InfoRow(
               icon: Icons.alternate_email,
@@ -402,13 +634,6 @@ class _ProfilePageState extends State<ProfilePage> {
               icon: Icons.email_outlined,
               label: 'Email Address',
               value: _profile?.email ?? widget.user.email,
-            ),
-            _InfoRow(
-              icon: Icons.phone_outlined,
-              label: 'Phone Number',
-              value: _profile?.phone?.isNotEmpty == true
-                  ? _profile!.phone!
-                  : 'Not provided',
             ),
           ],
         ),
@@ -833,7 +1058,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       child: Column(
         children: [
-          // Change Password Tile
+          // Request Details Change Tile
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Container(
@@ -841,6 +1066,66 @@ class _ProfilePageState extends State<ProfilePage> {
               height: 42,
               decoration: BoxDecoration(
                 color: violet.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.manage_accounts_outlined, color: violet),
+            ),
+            title: const Text(
+              'Request Details Change',
+              style: TextStyle(
+                color: textDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: const Text(
+              'Update bank account, phone, or address',
+              style: TextStyle(color: textMuted, fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: textMuted),
+            onTap: _openRequestProfileChange,
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF3EFF8)),
+
+          // Change Requests History Tile
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.history_edu_outlined, color: Color(0xFFD97706)),
+            ),
+            title: const Text(
+              'Change Requests History',
+              style: TextStyle(
+                color: textDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: const Text(
+              'Check approval status & reviewer comments',
+              style: TextStyle(color: textMuted, fontSize: 12),
+            ),
+            trailing: const Icon(Icons.chevron_right, color: textMuted),
+            onTap: _openChangeHistory,
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF3EFF8)),
+
+          // Change Password Tile
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE9FE),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.lock_reset_rounded, color: violet),

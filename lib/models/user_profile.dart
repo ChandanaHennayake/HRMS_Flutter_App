@@ -3,6 +3,8 @@ class UserProfile {
   final int? employeeId;
   final String username;
   final String fullName;
+  final String? firstName;
+  final String? lastName;
   final String email;
   final String? phone;
   final String role;
@@ -13,6 +15,20 @@ class UserProfile {
   final String? designationName;
   final String? employmentTypeName;
   final String? joinedDate;
+  final String? dateOfBirth;
+  final String? gender;
+  final String? addressLine1;
+  final String? addressLine2;
+  final String? city;
+  final String? qualification;
+
+  // Bank Details
+  final String? bankName;
+  final String? bankAccountNo;
+  final String? bankBranch;
+
+  // Change Request Flag
+  final bool hasPendingChangeRequest;
 
   final int? branchId;
   final String? branchName;
@@ -25,6 +41,8 @@ class UserProfile {
     this.employeeId,
     required this.username,
     required this.fullName,
+    this.firstName,
+    this.lastName,
     required this.email,
     this.phone,
     required this.role,
@@ -34,6 +52,16 @@ class UserProfile {
     this.designationName,
     this.employmentTypeName,
     this.joinedDate,
+    this.dateOfBirth,
+    this.gender,
+    this.addressLine1,
+    this.addressLine2,
+    this.city,
+    this.qualification,
+    this.bankName,
+    this.bankAccountNo,
+    this.bankBranch,
+    this.hasPendingChangeRequest = false,
     this.branchId,
     this.branchName,
     this.branchLatitude,
@@ -48,6 +76,8 @@ class UserProfile {
           json['employeeId'] is num ? (json['employeeId'] as num).toInt() : null,
       username: json['username'] as String? ?? '',
       fullName: json['fullName'] as String? ?? '',
+      firstName: json['firstName'] as String?,
+      lastName: json['lastName'] as String?,
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
       role: json['role'] as String? ?? '',
@@ -57,6 +87,16 @@ class UserProfile {
       designationName: json['designationName'] as String?,
       employmentTypeName: json['employmentTypeName'] as String?,
       joinedDate: json['joinedDate'] as String?,
+      dateOfBirth: json['dateOfBirth'] as String?,
+      gender: json['gender'] as String?,
+      addressLine1: json['addressLine1'] as String?,
+      addressLine2: json['addressLine2'] as String?,
+      city: json['city'] as String?,
+      qualification: json['qualification'] as String?,
+      bankName: json['bankName'] as String?,
+      bankAccountNo: json['bankAccountNo'] as String?,
+      bankBranch: json['bankBranch'] as String?,
+      hasPendingChangeRequest: json['hasPendingChangeRequest'] as bool? ?? false,
       branchId:
           json['branchId'] is num ? (json['branchId'] as num).toInt() : null,
       branchName: json['branchName'] as String?,

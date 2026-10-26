@@ -16,6 +16,7 @@ import '../../notification/notification_bell.dart';
 import '../../payroll/payroll_management_page.dart';
 import '../../payroll/individual_payroll_page.dart';
 import '../../profile/profile_page.dart';
+import '../../profile/profile_change_requests_page.dart';
 import '../../report/reports_hub_page.dart';
 import '../../notice/notice_management_page.dart';
 
@@ -152,6 +153,21 @@ class _ManagerDashboardState
         ),
       ),
     );
+  }
+
+  Future<void> _openProfileChangeRequests() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileChangeRequestsPage(
+          user: widget.user,
+          isManagerOrAdmin: true,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
   }
 
   Future<void> _openCompanyAttendance() async {
@@ -817,7 +833,6 @@ class _ManagerDashboardState
           // Attendance Corrections
           InkWell(
             onTap: _openAttendanceCorrections,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -875,6 +890,62 @@ class _ManagerDashboardState
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: textMuted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
+          // Profile Change Requests
+          InkWell(
+            onTap: _openProfileChangeRequests,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.teal.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.manage_accounts_outlined,
+                      color: Colors.teal,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Profile Change Requests',
+                          style: TextStyle(
+                            color: textDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Personal & bank detail updates',
+                          style: TextStyle(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1159,6 +1230,12 @@ class _ManagerDashboardState
                   MaterialPageRoute(builder: (_) => const NoticeManagementPage()),
                 );
               },
+            ),
+
+            _action(
+              Icons.manage_accounts_outlined,
+              'Profile Updates',
+              onTap: _openProfileChangeRequests,
             ),
           ],
         ),

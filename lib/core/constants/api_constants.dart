@@ -360,6 +360,17 @@ static String leaveBalances(int employeeId, {int? year}) {
   }
 
   // ============================================================
+  // PROFILE CHANGE REQUESTS
+  // ============================================================
+
+  static const String profileChange = '/api/ProfileChange';
+  static String myProfileChanges(int employeeId) => '/api/ProfileChange/my?employeeId=$employeeId';
+  static String profileChangeById(int id) => '/api/ProfileChange/$id';
+  static String approveProfileChange(int id) => '/api/ProfileChange/$id/approve';
+  static String rejectProfileChange(int id) => '/api/ProfileChange/$id/reject';
+  static String cancelProfileChange(int id) => '/api/ProfileChange/$id/cancel';
+
+  // ============================================================
   // SYSTEM HEALTH
   // ============================================================
 

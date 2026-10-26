@@ -24,6 +24,7 @@ import '../../attendance/manager_attendance_corrections_page.dart';
 
 // Profile
 import '../../profile/profile_page.dart';
+import '../../profile/profile_change_requests_page.dart';
 import '../../notification/notification_bell.dart';
 
 // Payroll
@@ -237,6 +238,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
       ),
     );
+  }
+
+  // ============================================================
+  // OPEN PROFILE CHANGE REQUESTS
+  // ============================================================
+
+  Future<void> _openProfileChangeRequests() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileChangeRequestsPage(
+          user: widget.user,
+          isManagerOrAdmin: true,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+    _loadSummary();
   }
 
   // ============================================================
@@ -685,6 +705,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _summary.missingCheckOut,
                 violet,
               ),
+
+              const Divider(height: 1),
+
+              _attentionItem(
+                Icons.manage_accounts_outlined,
+                'Profile Changes',
+                0,
+                Colors.teal,
+              ),
             ],
           ),
         ),
@@ -707,6 +736,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         if (title == 'Pending Corrections') {
           await _openAttendanceCorrections();
+          return;
+        }
+
+        if (title == 'Profile Changes') {
+          await _openProfileChangeRequests();
           return;
         }
 
@@ -952,6 +986,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Icons.calculate_outlined,
         'title': 'Emp Payroll',
       },
+      {
+        'icon':
+            Icons.manage_accounts_outlined,
+        'title': 'Profile Updates',
+      },
     ];
 
     if (widget.user.roleId == 1) {
@@ -1113,6 +1152,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     );
                     if (!mounted) return;
                     _loadSummary();
+                    return;
+                  }
+
+                  // ==================================================
+                  // PROFILE CHANGE REQUESTS
+                  // ==================================================
+
+                  if (title == 'Profile Updates') {
+                    await _openProfileChangeRequests();
                     return;
                   }
 
